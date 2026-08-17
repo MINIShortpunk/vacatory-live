@@ -3217,11 +3217,15 @@ function profileLink(url, label, accessibleLabel = label) {
     return "";
   }
 
+  const linkAccessibleLabel = /opens in new tab/i.test(String(accessibleLabel))
+    ? String(accessibleLabel)
+    : `${accessibleLabel} (opens in new tab)`;
+
   return `
     <a
       class="profile-external-link"
       href="${escapeHtml(safe)}"
-      aria-label="${escapeHtml(accessibleLabel)}"
+      aria-label="${escapeHtml(linkAccessibleLabel)}"
       target="_blank"
       rel="noopener noreferrer"
     >
