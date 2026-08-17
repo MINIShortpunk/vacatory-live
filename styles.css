@@ -87,3 +87,37 @@
   color: var(--muted);
 }
 /* VACATORY SEARCHABLE FILTER COMBOBOX END */
+
+
+/* VACATORY CANONICAL CARD SURFACE START */
+:where([class$="-card"], [class*="-card "]) {
+  border: 2px solid #7d698c !important;
+  box-shadow: 0 14px 30px rgba(48, 25, 75, 0.18) !important;
+}
+
+[data-theme="dark"] :where([class$="-card"], [class*="-card "]) {
+  border-color: #b8a6c8 !important;
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.38) !important;
+}
+
+:where([class$="-card"], [class*="-card "]):is(
+  :hover,
+  :focus-visible,
+  :focus-within
+) {
+  border-color: var(--purple) !important;
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--purple) 18%, transparent),
+    0 14px 30px rgba(48, 25, 75, 0.18) !important;
+}
+
+[data-theme="dark"] :where([class$="-card"], [class*="-card "]):is(
+  :hover,
+  :focus-visible,
+  :focus-within
+) {
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--purple) 22%, transparent),
+    0 16px 34px rgba(0, 0, 0, 0.38) !important;
+}
+/* VACATORY CANONICAL CARD SURFACE END */
