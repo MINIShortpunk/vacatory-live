@@ -139,3 +139,12 @@ px 34px rgba(0, 0, 0, 0.38) !important;
   }
 }
 /* VACATORY COMPACT PAGE RHYTHM END */
+
+/* VACATORY AAA THEME TOGGLE TARGET START */
+.theme-toggle {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+}
+/* VACATORY AAA THEME TOGGLE TARGET END */
