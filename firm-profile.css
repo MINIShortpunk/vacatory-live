@@ -4,8 +4,8 @@
 
 
 /* VACATORY_PROFILE_HERO_REPAIR_20260817 */
-.firm-profile-page .page-hero-card{padding-bottom:clamp(1.5rem,2.5vw,2rem)}
+.firm-profile-page .page-hero-card{padding-bottom:clamp(2.5rem,4vw,3.5rem)}
 .firm-profile-page .profile-header-text .firm-type{display:none!important}
 .firm-profile-page .profile-header-text h1{margin-top:0;font-size:clamp(2.52rem,5.4vw,4.68rem)}
 .firm-profile-page a.tab-btn{display:flex;align-items:center;justify-content:center}
-@media (max-width:680px){.firm-profile-page .profile-header-text h1{font-size:clamp(1.935rem,10.8vw,3.15rem)}}
+@media (max-width:680px){.firm-profile-page .page-hero-card{padding-bottom:2rem}.firm-profile-page .profile-header-text h1{font-size:clamp(1.935rem,10.8vw,3.15rem)}}

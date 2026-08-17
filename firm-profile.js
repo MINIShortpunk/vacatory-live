@@ -1098,7 +1098,34 @@ function vacatoryCanonicalView(o){
 function vacatoryCanonicalViews(rows){return (rows||[]).filter(vacatoryCanonicalVisible).map(vacatoryCanonicalView)}
 function vacatoryCanonicalNextDeadline(rows){
   const api=vacatoryCanonicalApi();
-  return api.buildDeadlineRecords((rows||[]).filter(vacatoryCanonicalVisible),{includePassed:false})[0]||null;
+  const today=api.todayDateOnly();
+  const deadlines=[];
+
+  (rows||[])
+    .filter(vacatoryCanonicalVisible)
+    .forEach(opportunity=>{
+      (opportunity.cycles||[]).forEach(cycle=>{
+        const closesOn=String(cycle.closesOn||"").trim();
+
+        if(
+          !cycle.hasExactApplicationDeadline||
+          !/^\d{4}-\d{2}-\d{2}$/.test(closesOn)||
+          closesOn<today
+        ){
+          return;
+        }
+
+        deadlines.push({
+          closesOn,
+          publicTitle:opportunity.publicTitle||opportunity.officialName||"Student opportunity"
+        });
+      });
+    });
+
+  return deadlines.sort((first,second)=>
+    first.closesOn.localeCompare(second.closesOn)||
+    first.publicTitle.localeCompare(second.publicTitle,"en-GB")
+  )[0]||null;
 }
 function vacatoryCanonicalRoutes(rows){
   const map=new Map();
