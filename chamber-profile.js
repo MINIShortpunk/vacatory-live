@@ -514,7 +514,8 @@ applyChamberProfileSeo(chamber);
   }
 
   if (typeElement) {
-    typeElement.textContent = "Barristers’ chambers";
+    typeElement.textContent = "";
+    typeElement.hidden = true;
   }
 
   if (overviewElement) {
