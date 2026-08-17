@@ -1117,3 +1117,145 @@ function vacatoryCanonicalVisaSummary(rows,research){
   if((research||[]).some(x=>sectionMatches(x,["visa","right to work","immigration","sponsorship"])))return{value:"Firm guidance available",note:"See Pay, funding & visas.",status:"confirmed"};
   return{value:"Not published",note:"No firm-wide visa commitment is inferred.",status:"unpublished"};
 }
+
+
+/* VACATORY_CANONICAL_PROFILE_LAZY_TABS_20260817
+   Render each profile tab once, on first activation, and keep the active tab
+   in a shareable ?tab= URL without changing the canonical profile URL. */
+const vacatoryFirmLazyTabs = new Set([
+  "overview",
+  "opportunities",
+  "pay-funding-visas",
+  "practice-areas",
+  "locations",
+  "roles",
+  "inclusion-disability",
+  "pro-bono",
+  "firm-highlights",
+  "links-socials"
+]);
+const vacatoryFirmLoadedTabs = new Set();
+let vacatoryFirmLazyRecord = null;
+
+function vacatoryFirmTabFromUrl() {
+  const requested = new URLSearchParams(window.location.search).get("tab");
+  return vacatoryFirmLazyTabs.has(requested) ? requested : "overview";
+}
+
+function vacatoryFirmUpdateTabUrl(tab, mode = "push") {
+  if (mode === "none") return;
+  const url = new URL(window.location.href);
+  if (tab === "overview") url.searchParams.delete("tab");
+  else url.searchParams.set("tab", tab);
+  history[mode === "replace" ? "replaceState" : "pushState"](
+    history.state,
+    "",
+    `${url.pathname}${url.search}${url.hash}`
+  );
+}
+
+async function vacatoryFirmEnsureTab(tab) {
+  if (!vacatoryFirmLazyRecord || vacatoryFirmLoadedTabs.has(tab)) return;
+
+  const loaders = {
+    overview: () => loadAtAGlance(vacatoryFirmLazyRecord),
+    opportunities: () => loadOpportunities(vacatoryFirmLazyRecord),
+    "pay-funding-visas": () => loadPayFundingVisas(),
+    "practice-areas": () => loadPracticeAreas(),
+    locations: () => loadLocations(vacatoryFirmLazyRecord),
+    roles: () => loadRoles(),
+    "inclusion-disability": () => loadInclusionDisability(),
+    "pro-bono": () => loadProBono(),
+    "firm-highlights": () => loadFirmHighlights(vacatoryFirmLazyRecord),
+    "links-socials": () => loadLinksAndSocials(vacatoryFirmLazyRecord)
+  };
+
+  const loader = loaders[tab];
+  if (!loader) return;
+
+  const panel = document.getElementById(`tab-${tab}`);
+  vacatoryFirmLoadedTabs.add(tab);
+  panel?.setAttribute("aria-busy", "true");
+
+  try {
+    await loader();
+  } catch (error) {
+    vacatoryFirmLoadedTabs.delete(tab);
+    console.error(`Unable to load ${tab} tab:`, error);
+  } finally {
+    panel?.removeAttribute("aria-busy");
+    if (typeof vacatoryRenderAllTabFreshness === "function") {
+      vacatoryRenderAllTabFreshness();
+    }
+  }
+}
+
+function vacatoryFirmSelectTab(tab, options = {}) {
+  const selected = vacatoryFirmLazyTabs.has(tab) ? tab : "overview";
+  const tabs = Array.from(document.querySelectorAll(".tab-btn"));
+  const panels = Array.from(document.querySelectorAll(".tab-panel"));
+
+  tabs.forEach(button => {
+    const active = button.dataset.tab === selected;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-selected", String(active));
+    button.tabIndex = active ? 0 : -1;
+  });
+
+  panels.forEach(panel => {
+    const active = panel.id === `tab-${selected}`;
+    panel.classList.toggle("active", active);
+    panel.hidden = !active;
+  });
+
+  vacatoryFirmUpdateTabUrl(selected, options.historyMode || "push");
+  void vacatoryFirmEnsureTab(selected);
+}
+
+setupTabs = function () {
+  const tabs = Array.from(document.querySelectorAll(".tab-btn"));
+  tabs.forEach(tab => {
+    tab.addEventListener("click", () => {
+      vacatoryFirmSelectTab(tab.dataset.tab, { historyMode: "push" });
+    });
+  });
+};
+
+loadFirmProfile = async function () {
+  if (typeof client === "undefined") {
+    console.error("The Supabase client is unavailable.");
+    showError();
+    return;
+  }
+
+  const requestedTab = vacatoryFirmTabFromUrl();
+  let firm;
+
+  try {
+    const { data, error } = await client
+      .from("firms")
+      .select("*")
+      .eq("id", firmId)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) throw new Error("Firm record not found.");
+    firm = data;
+  } catch (error) {
+    console.error("Unable to load firm record:", error);
+    showError();
+    return;
+  }
+
+  vacatoryFirmLazyRecord = firm;
+  renderFirmHeader(firm);
+  document.getElementById("loadingState")?.classList.add("hidden");
+  document.getElementById("errorState")?.classList.add("hidden");
+  document.getElementById("profileContent")?.classList.remove("hidden");
+  vacatoryFirmSelectTab(requestedTab, { historyMode: "replace" });
+};
+
+window.addEventListener("popstate", () => {
+  if (!vacatoryFirmLazyRecord) return;
+  vacatoryFirmSelectTab(vacatoryFirmTabFromUrl(), { historyMode: "none" });
+});
