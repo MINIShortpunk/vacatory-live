@@ -1259,3 +1259,150 @@ window.addEventListener("popstate", () => {
   if (!vacatoryFirmLazyRecord) return;
   vacatoryFirmSelectTab(vacatoryFirmTabFromUrl(), { historyMode: "none" });
 });
+
+/* VACATORY_CANONICAL_PROFILE_SEO_TABS_20260817
+   Make every tab a crawlable URL, keep per-tab metadata accurate, and expose
+   truthful page/list schema without misclassifying student opportunities. */
+const vacatoryFirmTabSeo = {
+  overview: ["Overview", "firm profile, student routes and official research"],
+  opportunities: ["Opportunities", "current and upcoming student opportunities, application dates and official links"],
+  "pay-funding-visas": ["Pay, funding & visas", "student pay, funding, sponsorship and visa information"],
+  "practice-areas": ["Practice areas", "practice areas and sector research"],
+  locations: ["Locations", "UK and global office locations"],
+  roles: ["Roles", "student entry routes and career pathways"],
+  "inclusion-disability": ["EDI", "equality, diversity, inclusion and disability support"],
+  "pro-bono": ["Pro bono", "pro bono programmes and community work"],
+  "firm-highlights": ["Firm highlights", "awards, matters and firm highlights"],
+  "links-socials": ["Links & Socials", "official websites, student careers pages and social channels"]
+};
+
+function vacatoryFirmTabUrl(tab) {
+  const base = vacatoryFirmLazyRecord
+    ? firmCleanProfileUrl(vacatoryFirmLazyRecord)
+    : new URL(window.location.href).origin + window.location.pathname;
+  const url = new URL(base);
+  if (tab !== "overview") url.searchParams.set("tab", tab);
+  return url.href;
+}
+
+function vacatoryFirmTabHref(tab) {
+  const url = new URL(window.location.href);
+  if (tab === "overview") url.searchParams.delete("tab");
+  else url.searchParams.set("tab", tab);
+  return `${url.pathname}${url.search}${url.hash}`;
+}
+
+function vacatoryFirmRefreshTabLinks() {
+  document.querySelectorAll(".tab-btn").forEach(tab => {
+    tab.setAttribute("href", vacatoryFirmTabHref(tab.dataset.tab || "overview"));
+  });
+}
+
+function vacatoryFirmPageSchema(tab) {
+  if (!vacatoryFirmLazyRecord) return;
+  const firm = vacatoryFirmLazyRecord;
+  const name = String(firm.name || firm.short_name || "Law firm").trim();
+  const baseUrl = firmCleanProfileUrl(firm);
+  const pageUrl = vacatoryFirmTabUrl(tab);
+  const label = vacatoryFirmTabSeo[tab]?.[0] || "Overview";
+  const description = `${name} ${vacatoryFirmTabSeo[tab]?.[1] || "firm research"} on Vacatory.`;
+  const breadcrumbs = [
+    { "@type": "ListItem", position: 1, name: "Vacatory", item: "https://vacatory.com/" },
+    { "@type": "ListItem", position: 2, name: "Firms", item: "https://vacatory.com/firms.html" },
+    { "@type": "ListItem", position: 3, name, item: baseUrl }
+  ];
+  if (tab !== "overview") {
+    breadcrumbs.push({ "@type": "ListItem", position: 4, name: label, item: pageUrl });
+  }
+  const page = {
+    "@type": "CollectionPage",
+    "@id": `${pageUrl}#webpage`,
+    url: pageUrl,
+    name: tab === "overview" ? `${name} | Vacatory` : `${name} ${label} | Vacatory`,
+    description,
+    isPartOf: { "@type": "WebSite", "@id": "https://vacatory.com/#website", name: "Vacatory", url: "https://vacatory.com/" },
+    about: { "@id": `${baseUrl}#organization` }
+  };
+  if (tab === "opportunities" && Array.isArray(vacatoryOpportunityRows)) {
+    page.mainEntity = {
+      "@type": "ItemList",
+      name: `${name} student opportunities`,
+      numberOfItems: vacatoryOpportunityRows.length,
+      itemListElement: vacatoryOpportunityRows.map((row, index) => {
+        const item = {
+          "@type": "ListItem",
+          position: index + 1,
+          name: vacatoryPublicOpportunityTitle(row)
+        };
+        const url = normaliseExternalUrl(row.applicationUrl || row.officialUrl || row.sourceUrl);
+        if (url) item.url = url;
+        return item;
+      })
+    };
+  }
+  let script = document.getElementById("firmProfilePageSchema");
+  if (!script) {
+    script = document.createElement("script");
+    script.id = "firmProfilePageSchema";
+    script.type = "application/ld+json";
+    document.head.appendChild(script);
+  }
+  script.textContent = JSON.stringify({
+    "@context": "https://schema.org",
+    "@graph": [
+      page,
+      { "@type": "BreadcrumbList", "@id": `${pageUrl}#breadcrumb`, itemListElement: breadcrumbs }
+    ]
+  });
+}
+
+function vacatoryFirmApplyTabSeo(tab) {
+  if (!vacatoryFirmLazyRecord) return;
+  const firm = vacatoryFirmLazyRecord;
+  const name = String(firm.name || firm.short_name || "Law firm").trim();
+  const label = vacatoryFirmTabSeo[tab]?.[0] || "Overview";
+  const description = `${name} ${vacatoryFirmTabSeo[tab]?.[1] || "firm research"} on Vacatory.`;
+  const url = vacatoryFirmTabUrl(tab);
+  const title = tab === "overview" ? `${name} | Vacatory` : `${name} ${label} | Vacatory`;
+  const shareImage = normaliseExternalUrl(
+    firm.og_image_url || firm.social_share_image_url || firm.logo_url
+  ) || "https://vacatory.com/hero-legal-desk.jpg";
+  const customImage = shareImage !== "https://vacatory.com/hero-legal-desk.jpg";
+  document.title = title;
+  upsertFirmCanonical(url);
+  upsertFirmSeoMeta("name", "description", description);
+  upsertFirmSeoMeta("property", "og:title", title);
+  upsertFirmSeoMeta("property", "og:description", description);
+  upsertFirmSeoMeta("property", "og:url", url);
+  upsertFirmSeoMeta("property", "og:image", shareImage);
+  upsertFirmSeoMeta("property", "og:image:alt", customImage ? `${name} logo` : "Vacatory legal careers research");
+  upsertFirmSeoMeta("name", "twitter:card", customImage ? "summary" : "summary_large_image");
+  upsertFirmSeoMeta("name", "twitter:title", title);
+  upsertFirmSeoMeta("name", "twitter:description", description);
+  upsertFirmSeoMeta("name", "twitter:image", shareImage);
+  vacatoryFirmPageSchema(tab);
+}
+
+const vacatoryFirmEnsureTabSeoBase = vacatoryFirmEnsureTab;
+vacatoryFirmEnsureTab = async function (tab) {
+  await vacatoryFirmEnsureTabSeoBase(tab);
+  vacatoryFirmApplyTabSeo(tab);
+};
+
+const vacatoryFirmSelectTabSeoBase = vacatoryFirmSelectTab;
+vacatoryFirmSelectTab = function (tab, options = {}) {
+  vacatoryFirmSelectTabSeoBase(tab, options);
+  const selected = vacatoryFirmLazyTabs.has(tab) ? tab : "overview";
+  vacatoryFirmRefreshTabLinks();
+  vacatoryFirmApplyTabSeo(selected);
+};
+
+setupTabs = function () {
+  vacatoryFirmRefreshTabLinks();
+  document.querySelectorAll(".tab-btn").forEach(tab => {
+    tab.addEventListener("click", event => {
+      event.preventDefault();
+      vacatoryFirmSelectTab(tab.dataset.tab, { historyMode: "push" });
+    });
+  });
+};

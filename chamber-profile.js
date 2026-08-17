@@ -3887,3 +3887,161 @@ window.addEventListener("popstate", () => {
   if (!state.chamber) return;
   vacatoryChamberSelectTab(vacatoryChamberTabFromUrl(), { historyMode: "none" });
 });
+
+/* VACATORY_CANONICAL_CHAMBER_SEO_TABS_20260817
+   Crawlable per-tab URLs, accurate tab metadata and truthful collection schema. */
+const vacatoryChamberTabSeo = {
+  overview: ["Overview", "chambers profile and student opportunity research"],
+  opportunities: ["Opportunities", "pupillage, mini-pupillage and student opportunities"],
+  "practice-areas": ["Practice areas", "practice areas and specialisms"],
+  locations: ["Locations", "locations and circuit information"],
+  "pupillage-tenancy": ["Pupillage & tenancy", "pupillage, tenancy and progression information"],
+  funding: ["Funding", "pupillage awards, scholarships and student funding"],
+  edi: ["EDI", "equality, diversity, inclusion and accessibility information"],
+  highlights: ["Highlights", "rankings and chambers highlights"],
+  "links-socials": ["Links & Socials", "official websites, application pages and social channels"]
+};
+
+function vacatoryChamberTabUrl(tab) {
+  const url = new URL("https://vacatory.com/chamber-profile.html");
+  const id = chamberId || new URLSearchParams(window.location.search).get("id");
+  if (id) url.searchParams.set("id", id);
+  if (tab !== "overview") url.searchParams.set("tab", tab);
+  return url.href;
+}
+
+function vacatoryChamberTabHref(tab) {
+  const url = new URL(window.location.href);
+  if (tab === "overview") url.searchParams.delete("tab");
+  else url.searchParams.set("tab", tab);
+  return `${url.pathname}${url.search}${url.hash}`;
+}
+
+function vacatoryChamberRefreshTabLinks() {
+  document.querySelectorAll(".tab-btn").forEach(tab => {
+    tab.setAttribute("href", vacatoryChamberTabHref(tab.dataset.tab || "overview"));
+  });
+}
+
+function vacatoryChamberPageSchema(tab) {
+  if (!state.chamber) return;
+  const chamber = state.chamber;
+  const name = String(chamber.name || chamber.short_name || "Barristers’ chambers").trim();
+  const baseUrl = vacatoryChamberTabUrl("overview");
+  const pageUrl = vacatoryChamberTabUrl(tab);
+  const label = vacatoryChamberTabSeo[tab]?.[0] || "Overview";
+  const description = `${name} ${vacatoryChamberTabSeo[tab]?.[1] || "chambers research"} on Vacatory.`;
+  const organization = {
+    "@type": "Organization",
+    "@id": `${baseUrl}#organization`,
+    name,
+    url: chamber.website_url || baseUrl
+  };
+  if (chamber.logo_url) organization.logo = chamber.logo_url;
+  const breadcrumbs = [
+    { "@type": "ListItem", position: 1, name: "Vacatory", item: "https://vacatory.com/" },
+    { "@type": "ListItem", position: 2, name: "Chambers", item: "https://vacatory.com/chambers.html" },
+    { "@type": "ListItem", position: 3, name, item: baseUrl }
+  ];
+  if (tab !== "overview") breadcrumbs.push({ "@type": "ListItem", position: 4, name: label, item: pageUrl });
+  const page = {
+    "@type": "CollectionPage",
+    "@id": `${pageUrl}#webpage`,
+    url: pageUrl,
+    name: tab === "overview" ? `${name} | Vacatory` : `${name} ${label} | Vacatory`,
+    description,
+    isPartOf: { "@type": "WebSite", "@id": "https://vacatory.com/#website", name: "Vacatory", url: "https://vacatory.com/" },
+    about: { "@id": organization["@id"] }
+  };
+  if (tab === "opportunities" && Array.isArray(state.opportunities)) {
+    page.mainEntity = {
+      "@type": "ItemList",
+      name: `${name} student opportunities`,
+      numberOfItems: state.opportunities.length,
+      itemListElement: state.opportunities.map((row, index) => {
+        const item = { "@type": "ListItem", position: index + 1, name: row.scheme_name || row.opportunity_name || row.title || "Student opportunity" };
+        const url = row.application_url || row.official_url || row.source_url;
+        if (/^https?:\/\//i.test(String(url || ""))) item.url = url;
+        return item;
+      })
+    };
+  }
+  let script = document.getElementById("chamberProfilePageSchema");
+  if (!script) {
+    script = document.createElement("script");
+    script.id = "chamberProfilePageSchema";
+    script.type = "application/ld+json";
+    document.head.appendChild(script);
+  }
+  script.textContent = JSON.stringify({
+    "@context": "https://schema.org",
+    "@graph": [
+      organization,
+      page,
+      { "@type": "BreadcrumbList", "@id": `${pageUrl}#breadcrumb`, itemListElement: breadcrumbs }
+    ]
+  });
+}
+
+function vacatoryChamberApplyTabSeo(tab) {
+  if (!state.chamber) return;
+  const chamber = state.chamber;
+  const name = String(chamber.name || chamber.short_name || "Barristers’ chambers").trim();
+  const label = vacatoryChamberTabSeo[tab]?.[0] || "Overview";
+  const description = `${name} ${vacatoryChamberTabSeo[tab]?.[1] || "chambers research"} on Vacatory.`;
+  const url = vacatoryChamberTabUrl(tab);
+  const title = tab === "overview" ? `${name} | Vacatory` : `${name} ${label} | Vacatory`;
+  const shareImage = /^https?:\/\//i.test(String(chamber.logo_url || "")) ? chamber.logo_url : "https://vacatory.com/hero-legal-desk.jpg";
+  const customImage = shareImage !== "https://vacatory.com/hero-legal-desk.jpg";
+  document.title = title;
+  upsertChamberCanonical(url);
+  upsertChamberSeoMeta("name", "description", description);
+  upsertChamberSeoMeta("property", "og:title", title);
+  upsertChamberSeoMeta("property", "og:description", description);
+  upsertChamberSeoMeta("property", "og:url", url);
+  upsertChamberSeoMeta("property", "og:image", shareImage);
+  upsertChamberSeoMeta("property", "og:image:alt", customImage ? `${name} logo` : "Vacatory legal careers research");
+  upsertChamberSeoMeta("name", "twitter:card", customImage ? "summary" : "summary_large_image");
+  upsertChamberSeoMeta("name", "twitter:title", title);
+  upsertChamberSeoMeta("name", "twitter:description", description);
+  upsertChamberSeoMeta("name", "twitter:image", shareImage);
+  vacatoryChamberPageSchema(tab);
+}
+
+const vacatoryChamberEnsureTabSeoBase = vacatoryChamberEnsureTab;
+vacatoryChamberEnsureTab = async function (tab) {
+  await vacatoryChamberEnsureTabSeoBase(tab);
+  vacatoryChamberApplyTabSeo(tab);
+};
+
+const vacatoryChamberSelectTabSeoBase = vacatoryChamberSelectTab;
+vacatoryChamberSelectTab = function (tab, options = {}) {
+  vacatoryChamberSelectTabSeoBase(tab, options);
+  const selected = vacatoryChamberLazyTabs.has(tab) ? tab : "overview";
+  vacatoryChamberRefreshTabLinks();
+  vacatoryChamberApplyTabSeo(selected);
+};
+
+setupProfileTabs = function () {
+  const tabs = Array.from(document.querySelectorAll(".tab-btn"));
+  vacatoryChamberRefreshTabLinks();
+  tabs.forEach(tab => {
+    tab.addEventListener("click", event => {
+      event.preventDefault();
+      vacatoryChamberSelectTab(tab.dataset.tab, { historyMode: "push", focus: true });
+    });
+    tab.addEventListener("keydown", event => {
+      const currentIndex = tabs.indexOf(tab);
+      let nextIndex = null;
+      if (event.key === "ArrowRight") nextIndex = (currentIndex + 1) % tabs.length;
+      if (event.key === "ArrowLeft") nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+      if (event.key === "Home") nextIndex = 0;
+      if (event.key === "End") nextIndex = tabs.length - 1;
+      if (nextIndex !== null) {
+        event.preventDefault();
+        tabs[nextIndex].focus();
+        tabs[nextIndex].click();
+      }
+    });
+  });
+};
