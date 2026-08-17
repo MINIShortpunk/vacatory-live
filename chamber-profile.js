@@ -1,1 +1,3620 @@
-"use strict";const chamberParams=new URLSearchParams(window.location.search),chamberId=chamberParams.get("id"),state={chamber:null,opportunities:[],practiceAreas:[],locations:[],links:[],rankings:[],opportunityLocationFilter:"",opportunityTypeFilter:""};async function loadChamberProfile(){if("undefined"==typeof client)return console.error("The Supabase client is unavailable."),void showProfileError();try{const[e,t]=await Promise.all([client.from("chambers").select("*").eq("organisation_id",chamberId).eq("active",!0).single(),client.from("legal_organisations").select("*").eq("id",chamberId).eq("organisation_type","barristers_chambers").eq("active",!0).single()]);if(e.error||!e.data)throw e.error||new Error("Chambers record not found.");if(t.error||!t.data)throw t.error||new Error("Organisation record not found.");const n={...t.data,...e.data,organisation_id:e.data.organisation_id,id:t.data.id,name:t.data.name,short_name:t.data.short_name,logo_url:t.data.logo_url,website_url:t.data.website_url,careers_url:t.data.careers_url,overview:t.data.overview,official_domain:t.data.official_domain,head_office_city:t.data.head_office_city,head_office_country:t.data.head_office_country,organisation_research_status:t.data.research_status,organisation_research_checked_on:t.data.research_checked_on,organisation_next_review_on:t.data.next_review_on};state.chamber=n;const[a,i,r,o,s]=await Promise.all([loadOpportunityRows(n.organisation_id),loadPracticeAreaRows(n.organisation_id),loadLocationRows(n.organisation_id),loadLinkRows(n.organisation_id),loadRankingRows(n.organisation_id)]);state.opportunities=a,state.practiceAreas=i,state.locations=r,state.links=o,state.rankings=s,renderHeader(n),renderOverview(),renderOpportunityFilters(),renderOpportunities(),renderPracticeAreas(),renderLocations(),renderPupillageAndTenancy(),renderFunding(),renderEdi(),renderHighlights(),renderLinksAndSocials(),hideLoadingAndShowProfile()}catch(e){console.error("Unable to load chambers profile:",e),showProfileError()}}async function loadOpportunityRows(e){const t=window.VacatoryOpportunityData;if(!t?.loadProviderOpportunities)throw new Error("Load opportunity-data.js before chamber-profile.js.");return deduplicateObjects((await t.loadProviderOpportunities({client:client,providerId:e,includeSearchIndex:!0})).map(chamberCanonicalOpportunityView),e=>String(e.id||e.slug)).sort((e,t)=>Number(e.display_order||0)-Number(t.display_order||0))}function chamberCanonicalUniqueText(e){return[...new Set((e||[]).flat().map(e=>String(e||"").trim()).filter(Boolean))].join("\n")}function chamberCanonicalCycleText(e,t){return chamberCanonicalUniqueText([e?.[t],...(e?.cycles||[]).map(e=>e?.[t])])}function chamberCanonicalCompensation(e){const t=window.VacatoryOpportunityData,n=(e?.compensation||[]).map(e=>t.formatCompensation(e)).filter(Boolean);return n.length||n.push(e?.primaryCompensation?.text,e?.primaryCompensation?.details),chamberCanonicalUniqueText(n)}function chamberCanonicalOpportunityView(e){const t=chamberCanonicalUniqueText((e.cycles||[]).flatMap(e=>[e.applicationDatesText,e.programmeDatesText])),n=chamberCanonicalUniqueText([chamberCanonicalCycleText(e,"expensesText"),chamberCanonicalCycleText(e,"travelSupportText"),chamberCanonicalCycleText(e,"accommodationSupportText")]),a=chamberCanonicalCompensation(e),i=chamberCanonicalUniqueText([e.raw?.source_status_note,...(e.cycles||[]).map(e=>e.raw?.source_status_note)]);return{id:e.opportunityId,source_opportunity_id:e.sourceOpportunityId,slug:e.opportunitySlug,public_title:e.publicTitle,scheme_name:e.publicTitle,scheme_type:e.opportunityTypeLabel,card_summary:e.publicSummary,student_summary:e.publicSummary,delivery_mode:e.deliveryMode,location:e.publicLocationLabel||e.locationSummary,countries:e.countries||[],cities:e.cities||[],country:(e.countries||[])[0]||"",application_open_date:e.opensOn,application_close_date:e.closesOn,programme_start_date:e.programmeStartsOn,programme_end:e.programmeEndsOn,programme_dates_text:chamberCanonicalUniqueText([e.programmeDatesText,t]),duration:e.durationText,status:e.publicApplicationStatus,status_note:i,cycle_year:e.applicationYear||e.programmeYear||e.intakeYear,eligibility:chamberCanonicalUniqueText([chamberCanonicalCycleText(e,"audienceText"),chamberCanonicalCycleText(e,"eligibilityText")]),year_of_study_requirements:chamberCanonicalCycleText(e,"studyStageText"),academic_requirements:chamberCanonicalCycleText(e,"academicCriteria"),application_process:chamberCanonicalCycleText(e,"applicationProcessText"),assessment_formats:chamberCanonicalCycleText(e,"assessmentsText"),programme_structure:chamberCanonicalCycleText(e,"programmeStructureText"),progression_route:chamberCanonicalCycleText(e,"progressionRouteText"),pay_details:a,salary:a,sponsorship:chamberCanonicalCycleText(e,"fundingText"),expenses:n,right_to_work_requirements:chamberCanonicalCycleText(e,"rightToWorkText"),disability_support:chamberCanonicalCycleText(e,"disabilitySupportText"),additional_details:chamberCanonicalCycleText(e,"additionalDetailsText"),application_link:e.applicationUrl||e.officialUrl,source_url:e.officialUrl,research_checked_on:e.lastVerifiedOn,display_order:e.displayOrder,canonical_opportunity:e}}async function loadPracticeAreaRows(e){const{data:t,error:n}=await client.from("chamber_practice_areas").select("*").eq("organisation_id",e).eq("active",!0).order("display_order",{ascending:!0}).order("practice_area",{ascending:!0});return n?(console.warn("Unable to load chamber practice areas:",n.message),[]):t||[]}async function loadLocationRows(e){const{data:t,error:n}=await client.from("organisation_locations").select("*").eq("organisation_id",e).eq("active",!0).order("display_order",{ascending:!0});return n?(console.warn("Unable to load chamber locations:",n.message),[]):t||[]}async function loadLinkRows(e){const{data:t,error:n}=await client.from("chamber_links").select("*").eq("organisation_id",e).eq("active",!0).order("display_order",{ascending:!0});return n?(console.warn("Unable to load chamber links:",n.message),[]):t||[]}async function loadRankingRows(e){const{data:t,error:n}=await client.from("chamber_rankings").select("*").eq("organisation_id",e).eq("is_current",!0).order("ranking_year",{ascending:!1}).order("ranking_name",{ascending:!0});return n?(console.warn("Unable to load chamber rankings:",n.message),[]):t||[]}function hideLoadingAndShowProfile(){document.getElementById("loadingState")?.classList.add("hidden"),document.getElementById("errorState")?.classList.add("hidden"),document.getElementById("profileContent")?.classList.remove("hidden")}function showProfileError(){document.getElementById("loadingState")?.classList.add("hidden"),document.getElementById("profileContent")?.classList.add("hidden"),document.getElementById("errorState")?.classList.remove("hidden")}function setupProfileTabs(){const e=Array.from(document.querySelectorAll(".tab-btn")),t=Array.from(document.querySelectorAll(".tab-panel"));e.forEach(n=>{n.addEventListener("click",()=>{const a=n.dataset.tab;e.forEach(e=>{const t=e===n;e.classList.toggle("active",t),e.setAttribute("aria-selected",String(t)),e.tabIndex=t?0:-1}),t.forEach(e=>{const t=e.id===`tab-${a}`;e.classList.toggle("active",t),e.hidden=!t});const i=document.getElementById(`tab-${a}`);i?.focus?.({preventScroll:!0})}),n.addEventListener("keydown",t=>{const a=e.indexOf(n);let i=null;"ArrowRight"===t.key&&(i=(a+1)%e.length),"ArrowLeft"===t.key&&(i=(a-1+e.length)%e.length),"Home"===t.key&&(i=0),"End"===t.key&&(i=e.length-1),null!==i&&(t.preventDefault(),e[i].focus(),e[i].click())})}),t.forEach(e=>{e.hidden=!e.classList.contains("active"),e.tabIndex=-1}),e.forEach(e=>{e.tabIndex=e.classList.contains("active")?0:-1})}function upsertChamberSeoMeta(e,t,n){let a=document.head.querySelector(`meta[${e}="${t}"]`);a||(a=document.createElement("meta"),a.setAttribute(e,t),document.head.appendChild(a)),a.setAttribute("content",n)}function upsertChamberCanonical(e){let t=document.head.querySelector('link[rel="canonical"]');t||(t=document.createElement("link"),t.setAttribute("rel","canonical"),document.head.appendChild(t)),t.setAttribute("href",e)}function applyChamberProfileSeo(e){const t=String(e.name||e.short_name||"Barristers’ chambers").trim(),n=new URLSearchParams(window.location.search).get("id"),a=n?`https://vacatory.com/chamber-profile.html?id=${encodeURIComponent(n)}`:"https://vacatory.com/chamber-profile.html",i=`${t} chambers profile with practice areas, pupillage and mini-pupillage research, student opportunities, locations and official links on Vacatory.`;document.title=`${t} | Vacatory`,upsertChamberCanonical(a),upsertChamberSeoMeta("name","description",i),upsertChamberSeoMeta("property","og:type","website"),upsertChamberSeoMeta("property","og:site_name","Vacatory"),upsertChamberSeoMeta("property","og:title",`${t} | Vacatory`),upsertChamberSeoMeta("property","og:description",i),upsertChamberSeoMeta("property","og:url",a),upsertChamberSeoMeta("name","twitter:card","summary"),upsertChamberSeoMeta("name","twitter:title",`${t} | Vacatory`),upsertChamberSeoMeta("name","twitter:description",i)}function renderHeader(e){const t=e.name||e.short_name||"Barristers’ chambers";document.title=`${t} | Vacatory`,applyChamberProfileSeo(e);const n=document.getElementById("chambersLogo"),a=document.getElementById("chambersName"),i=document.getElementById("chambersType"),r=document.getElementById("chambersOverview"),o=document.getElementById("chambersMeta"),s=document.getElementById("heroActions");if(n){const a=(e.short_name||t).trim().charAt(0).toUpperCase();n.innerHTML=e.logo_url?`\n        <img\n          src="${escapeHtml(e.logo_url)}"\n          alt="${escapeHtml(t)} logo"\n        >\n      `:escapeHtml(a)}if(a&&(a.textContent=t),i&&(i.textContent="Barristers’ chambers"),r&&(r.textContent=e.overview||e.practice_summary||"Detailed chambers research is being added."),o){const t=[],n=[e.head_office_city,e.head_office_country].filter(Boolean).join(", ");n&&t.push(metaPill(locationIcon(),n)),e.year_founded&&t.push(metaPill(circuitIcon(),`Founded ${e.year_founded}`)),state.locations.length&&t.push(metaPill(buildingIcon(),`${state.locations.length} location${1===state.locations.length?"":"s"}`)),e.pupillage_gateway_member&&t.push(metaPill(linkIcon(),"Pupillage Gateway member")),o.innerHTML=t.join("")}if(s){const t=[];e.website_url&&t.push(heroAction(e.website_url,"Official website",!1)),e.careers_url&&t.push(heroAction(e.careers_url,"Careers",!0));const n=e.pupillage_gateway_url||findLinkUrlByTypes(["application_portal"]);n&&t.push(heroAction(n,"Pupillage Gateway",!1)),s.innerHTML=deduplicateStrings(t).join("")}}function renderOverview(){const e=document.getElementById("atGlanceLoading"),t=document.getElementById("atGlancePanel"),n=document.getElementById("atGlanceEvidence"),a=document.getElementById("atGlanceGrid"),i=document.getElementById("overviewResearchGrid"),r=document.getElementById("overviewDeadlines");if(!(state.chamber&&a&&i&&r))return;const o=state.chamber,s=state.opportunities,c=s.filter(e=>isFutureOrToday(getClosingDate(e))).sort((e,t)=>dateValue(getClosingDate(e))-dateValue(getClosingDate(t))),l=s.filter(isOpportunityOpenNow),p=uniqueCleanPoints(s.map(e=>displayOpportunityType(e))),u=uniqueCleanPoints(state.locations.map(e=>e.location_name||e.city||e.region||e.country)),d=s.filter(e=>hasText(e.disability_support)),m=[];if(c.length){const e=c[0];m.push(glanceCard("Next deadline",formatDate(getClosingDate(e)),e.scheme_name||"Application deadline","confirmed"))}else m.push(glanceCard("Next deadline","No future closing date published","Check the Opportunities tab for standing routes and dates awaiting publication.","unpublished"));if(m.push(glanceCard("Open applications",String(l.length),l.length?l.slice(0,2).map(e=>e.scheme_name).filter(Boolean).join(" · "):"No application window is open today.",l.length?"confirmed":"unpublished")),m.push(glanceCard("Researched routes",String(s.length),p.slice(0,4).join(" · ")||"No routes published",s.length?"verified":"unpublished")),m.push(glanceCard("Locations",String(state.locations.length||1),u.join(" · ")||[o.head_office_city,o.head_office_country].filter(Boolean).join(", "),"verified")),m.push(glanceCard("Practice areas",String(state.practiceAreas.length),state.practiceAreas.filter(e=>e.featured).slice(0,3).map(e=>e.practice_area).join(" · ")||"See the full official inventory.",state.practiceAreas.length?"verified":"unpublished")),null!==o.member_count&&void 0!==o.member_count&&m.push(glanceCard("Members",String(o.member_count),null!==o.pupil_count&&void 0!==o.pupil_count?`${o.pupil_count} pupil${1===Number(o.pupil_count)?"":"s"} recorded`:"Published member total","confirmed")),m.push(glanceCard("Adjustments and access",d.length||hasAccessibilityInformation()?"Published":"Check directly",d.length?"Opportunity-specific disability and adjustment information is recorded.":hasAccessibilityInformation()?"Location or EDI accessibility information is available.":"No specific adjustment wording is stored yet.",d.length||hasAccessibilityInformation()?"verified":"unpublished")),a.innerHTML=m.join(""),n){const e=o.organisation_research_checked_on||o.research_checked_on,t=o.organisation_next_review_on||o.next_review_on;n.innerHTML=`\n      <span class="evidence-date">\n        <strong>Research checked:</strong>\n        ${escapeHtml(formatDate(e)||"Date not recorded")}\n      </span>\n\n      <span class="evidence-badge ${normaliseStatusClass(o.organisation_research_status)}">\n        ${escapeHtml(formatStatus(o.organisation_research_status||o.research_status||"Research in progress"))}\n      </span>\n\n      ${t?`\n            <span class="evidence-date">\n              <strong>Next review:</strong>\n              ${escapeHtml(formatDate(t))}\n            </span>\n          `:""}\n    `}i.innerHTML=buildOverviewResearchCards(),r.innerHTML=buildDeadlinePreview(c),e?.classList.add("hidden"),t?.classList.remove("hidden")}function buildOverviewResearchCards(){const e=state.chamber,t=[];e.pupillage_overview&&t.push(overviewSummaryCard("Pupillage",e.pupillage_overview,"Open the Pupillage & tenancy tab for structure and progression.")),e.mini_pupillage_overview&&t.push(overviewSummaryCard("Mini-pupillage",e.mini_pupillage_overview,"Open the Opportunities tab for each route and application window.")),e.tenancy_overview&&t.push(overviewSummaryCard("Tenancy",e.tenancy_overview,"Published progression information is kept separate from application details."));const n=buildInternationalSummary();return n&&t.push(overviewSummaryCard("International opportunities",n,"International legal work is not treated as a student opportunity unless a distinct route is officially published.")),t.length?t.join(""):emptyMessage("Overview research has not yet been added.")}function buildInternationalSummary(){const e=state.opportunities.map(e=>e.additional_details).find(e=>hasText(e)&&/international|overseas|visa/i.test(String(e)));return e||(state.locations.some(e=>e.country&&!/united kingdom|england|wales|scotland|northern ireland/i.test(e.country))?"The chambers has at least one location outside the United Kingdom. Check each opportunity record for any location-specific eligibility.":"No separate overseas office or dedicated international student recruitment route is recorded in the current official-source audit.")}function buildDeadlinePreview(e){return e.length?e.slice(0,5).map(e=>`\n    <article class="deadline-preview-card">\n      <div class="deadline-preview-date">\n        ${escapeHtml(formatDate(getClosingDate(e)))}\n      </div>\n\n      <div class="deadline-preview-copy">\n        <h4>${escapeHtml(e.scheme_name||displayOpportunityType(e))}</h4>\n        <p>\n          ${escapeHtml([e.location,displayOpportunityType(e)].filter(Boolean).join(" · "))}\n        </p>\n      </div>\n\n      <span class="deadline-preview-status">\n        ${escapeHtml(formatStatus(e.status||"Upcoming"))}\n      </span>\n    </article>\n  `).join(""):emptyMessage("No future application closing date is currently published. Standing and closed routes remain available in the Opportunities tab for research.")}function publicChamberCountryLabel(e){const t=String(e||"").replace(/\s+/g," ").trim();if(!t)return"";const n={uk:"United Kingdom","u.k.":"United Kingdom",united_kingdom:"United Kingdom",united_states:"United States",uae:"United Arab Emirates",united_arab_emirates:"United Arab Emirates",hong_kong:"Hong Kong",new_zealand:"New Zealand",south_africa:"South Africa",republic_of_ireland:"Ireland"},a=t.toLowerCase();return n[a]?n[a]:t.includes("_")?t.split("_").filter(Boolean).map((e,t)=>{const n=e.toLowerCase();return t>0&&["and","of","the"].includes(n)?n:n.charAt(0).toUpperCase()+n.slice(1)}).join(" "):t}document.addEventListener("DOMContentLoaded",()=>{setupProfileTabs(),chamberId?loadChamberProfile():showProfileError()});const chamberCountryCodes="AD AE AF AG AI AL AM AO AQ AR AS AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BV BW BY BZ CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CW CX CY CZ DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM FO FR GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GS GT GU GW GY HK HM HN HR HT HU ID IE IL IM IN IO IQ IR IS IT JE JM JO JP KE KG KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MF MG MH MK ML MM MN MO MP MQ MR MS MT MU MV MW MX MY MZ NA NC NE NF NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PN PR PS PT PW PY QA RE RO RS RU RW SA SB SC SD SE SG SH SI SJ SK SL SM SN SO SR SS ST SV SX SY SZ TC TD TF TG TH TJ TK TL TM TN TO TR TT TV TW TZ UA UG UM US UY UZ VA VC VE VG VI VN VU WF WS YE YT ZA ZM ZW".split(/\s+/);function chamberCountryKey(e){return String(e||"").normalize("NFKD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g," ").replace(/\s+/g," ").trim()}const chamberCountryLookup=(()=>{const e=new Map;if("undefined"!=typeof Intl&&Intl.DisplayNames){const t=new Intl.DisplayNames(["en-GB"],{type:"region"});chamberCountryCodes.forEach(n=>{const a=t.of(n);a&&e.set(chamberCountryKey(a),a)})}return Object.entries({uk:"United Kingdom","u k":"United Kingdom","great britain":"United Kingdom",britain:"United Kingdom",england:"United Kingdom",wales:"United Kingdom",scotland:"United Kingdom","northern ireland":"United Kingdom","england and wales":"United Kingdom",us:"United States","u s":"United States",usa:"United States","united states of america":"United States",uae:"United Arab Emirates","u a e":"United Arab Emirates","republic of ireland":"Ireland","the netherlands":"Netherlands","hong kong":"Hong Kong","hong kong sar":"Hong Kong","hong kong s a r":"Hong Kong","hong kong sar china":"Hong Kong","czech republic":"Czechia","south korea":"South Korea","republic of korea":"South Korea",turkey:"Türkiye"}).forEach(([t,n])=>e.set(t,n)),e})();function chamberCanonicalCountry(e){return chamberCountryLookup.get(chamberCountryKey(e))||""}function chamberOpportunityCountry(e){for(const t of e?.countries||[]){const e=chamberCanonicalCountry(t);if(e)return e}const t=[e?.country,e?.country_text,e?.country_name,e?.location_country,e?.office_country,e?.jurisdiction];for(const e of t){const t=chamberCanonicalCountry(e);if(t)return t}const n=String(e?.scheme_name||e?.opportunity_name||e?.programme_name||e?.title||"").trim().match(/^(.{2,60}?)\s+[-–—]\s+/);return n?chamberCanonicalCountry(n[1]):""}function chamberResolvedOpportunityCountry(e){const t=chamberOpportunityCountry(e);if(t)return t;const n=String(e?.location||"").trim();for(const e of state.locations){const t=String(e.city||e.location_name||e.office_name||"").trim(),a=chamberCanonicalCountry(e.country||e.country_name||e.jurisdiction);if(t&&a&&(chamberCountryKey(n)===chamberCountryKey(t)||` ${chamberCountryKey(n)} `.includes(` ${chamberCountryKey(t)} `)))return a}const a=[...new Set([...state.locations.map(e=>chamberCanonicalCountry(e.country||e.country_name||e.jurisdiction)),chamberCanonicalCountry(state.chamber?.head_office_country)].filter(Boolean))];return 1===a.length?a[0]:""}function chamberOpportunityCityLabel(e,t){let n=String(e?.location||"").replace(/\s+/g," ").trim();return n?/^(?:global|international|online|virtual|remote)$/i.test(n)||chamberCountryKey(n)===chamberCountryKey(t)||/\b(?:offices?|countrywide|nationwide|various locations?|multiple locations?|office not specified)\b/i.test(n)?"":(n=n.replace(/\s+with\b.*$/i,"").replace(/\bThe Netherlands\b/gi,"Netherlands").replace(/\bRepublic of Ireland\b/gi,"Ireland").replace(/\bUnited States of America\b/gi,"United States").replace(/\bHong Kong SAR(?:,?\s*China)?\b/gi,"Hong Kong").replace(/\bCzech Republic\b/gi,"Czechia").replace(/\bRepublic of Korea\b/gi,"South Korea").replace(/\s+/g," ").trim(),n):""}function chamberFilterCityOnly(e){const t=String(e||"").replace(/\s+/g," ").trim().split(",").map(e=>e.trim()).filter(Boolean);return t.length?t.length>1&&/^d\.?\s*c\.?$/i.test(t[1])?`${t[0]} DC`:t[0]:""}function chamberFilterOfficeRows(){const e=new Set,t=[];return[...state.locations,{city:state.chamber?.head_office_city,country:state.chamber?.head_office_country}].forEach(n=>{const a=chamberCanonicalCountry(n?.country),i=chamberFilterCityOnly(n?.city);if(!a||!i)return;const r=`${chamberCountryKey(a)}|${chamberCountryKey(i)}`;e.has(r)||(e.add(r),t.push({country:a,city:i}))}),t}function chamberFilterLocationLabel(e,t){return e&&t?chamberCountryKey(e)===chamberCountryKey(t)?e:`${e}, ${t}`:""}function chamberLocationTextContainsCity(e,t){const n=` ${chamberCountryKey(e)} `,a=` ${chamberCountryKey(t)} `;return Boolean(a.trim()&&n.includes(a))}function chamberLooksLikeNonCity(e){return/(?:\d|\b(?:building|tower|street|road|avenue|boulevard|square|wharf|district|quarter|campus|office|centre|center|quay|harbour|harbor|docklands|business park|industrial park|manhattan|zuidas|canary wharf|city of london|la défense|la defense)\b)/i.test(String(e||""))}function chamberOpportunityFilterLocations(e){const t=(e?.countries||[]).map(chamberCanonicalCountry).filter(Boolean),n=(e?.cities||[]).map(e=>String(e||"").trim()).filter(Boolean);if(t.length||n.length){const e=(t.length?t:[""]).flatMap(e=>n.length?n.map(t=>chamberFilterLocationLabel(e,t)):[chamberFilterLocationLabel(e,"")]);return uniqueCleanPoints(e.filter(Boolean))}const a=chamberResolvedOpportunityCountry(e),i=String(e?.location||"").replace(/\s+/g," ").trim(),r=chamberFilterOfficeRows(),o=(a?r.filter(e=>e.country===a):r).filter(e=>chamberLocationTextContainsCity(i,e.city));if(o.length)return[...new Set(o.map(e=>chamberFilterLocationLabel(e.country,e.city)).filter(Boolean))];const s=chamberOpportunityCityLabel(e,a);let c=String(s||"").split(",").map(e=>e.trim()).filter(Boolean).filter(e=>!a||chamberCountryKey(e)!==chamberCountryKey(a)).find(e=>!chamberLooksLikeNonCity(e))||"";c=chamberFilterCityOnly(c);const l=chamberFilterLocationLabel(a,c);return l?[l]:[]}function chamberEscapeOpportunityGeo(e){return String(e||"").replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}function chamberOpportunityCoreName(e,t,n){let a=String(e?.scheme_name||e?.opportunity_name||e?.programme_name||e?.title||displayOpportunityType(e)||"Opportunity").replace(/[–—]/g," - ").replace(/\s+/g," ").trim();const i=[t,n,..."United Kingdom"===t?["United Kingdom","UK","England","Wales","Scotland","Northern Ireland","England and Wales"]:[]].filter(Boolean);let r=a.split(/\s+-\s+/).map(e=>e.trim()).filter(Boolean);return r=r.filter(e=>!i.some(t=>chamberCountryKey(e)===chamberCountryKey(t))),a=r.join(" - ").trim(),[...i].sort((e,t)=>t.length-e.length).forEach(e=>{const t=chamberEscapeOpportunityGeo(e);a=a.replace(new RegExp(`^${t}\\s*(?:[-:]\\s*)?`,"i"),"").replace(new RegExp(`\\s*(?:[-:]\\s*)?${t}$`,"i"),"").trim()}),a||displayOpportunityType(e)||"Opportunity"}function chamberPublicOpportunityTitle(e){if(e?.public_title)return String(e.public_title).trim();const t=chamberResolvedOpportunityCountry(e),n=chamberOpportunityCityLabel(e,t),a=chamberOpportunityCoreName(e,t,n),i=[];return t&&i.push(t),n&&chamberCountryKey(n)!==chamberCountryKey(t)&&i.push(n),i.push(a),i.filter(Boolean).filter((e,t,n)=>n.findIndex(t=>chamberCountryKey(t)===chamberCountryKey(e))===t).join(" - ")}function renderOpportunityFilters(){const e=document.getElementById("opportunityFilters");if(!e)return;if(!state.opportunities.length)return void(e.innerHTML="");const t=uniqueCleanPoints(state.opportunities.flatMap(chamberOpportunityFilterLocations).filter(Boolean)).sort((e,t)=>e.localeCompare(t,"en-GB")),n=uniqueCleanPoints(state.opportunities.map(e=>displayOpportunityType(e)).filter(Boolean)).sort((e,t)=>e.localeCompare(t,"en-GB"));e.innerHTML=`\n    <div\n      class="chamber-opportunity-filter-panel"\n      aria-label="Filter opportunities"\n    >\n      <div class="chamber-opportunity-filter-grid">\n\n        <div class="chamber-opportunity-filter-control">\n          <label for="chamberOpportunityLocationFilter">\n            Location\n          </label>\n\n          <select id="chamberOpportunityLocationFilter">\n            <option value="">All locations</option>\n\n            ${t.map(e=>`\n              <option\n                value="${escapeHtml(e)}"\n                ${e===state.opportunityLocationFilter?"selected":""}\n              >\n                ${escapeHtml(e)}\n              </option>\n            `).join("")}\n          </select>\n        </div>\n\n        <div class="chamber-opportunity-filter-control">\n          <label for="chamberOpportunityTypeFilter">\n            Type\n          </label>\n\n          <select id="chamberOpportunityTypeFilter">\n            <option value="">All types</option>\n\n            ${n.map(e=>`\n              <option\n                value="${escapeHtml(e)}"\n                ${e===state.opportunityTypeFilter?"selected":""}\n              >\n                ${escapeHtml(e)}\n              </option>\n            `).join("")}\n          </select>\n        </div>\n\n        <button\n          id="chamberOpportunityFilterReset"\n          class="secondary-btn chamber-opportunity-filter-reset"\n          type="button"\n          ${state.opportunityLocationFilter||state.opportunityTypeFilter?"":"hidden"}\n        >\n          Reset\n        </button>\n\n      </div>\n    </div>\n  `;const a=document.getElementById("chamberOpportunityLocationFilter"),i=document.getElementById("chamberOpportunityTypeFilter"),r=document.getElementById("chamberOpportunityFilterReset");a?.addEventListener("change",()=>{state.opportunityLocationFilter=a.value,renderOpportunityFilters(),renderOpportunities()}),i?.addEventListener("change",()=>{state.opportunityTypeFilter=i.value,renderOpportunityFilters(),renderOpportunities()}),r?.addEventListener("click",()=>{state.opportunityLocationFilter="",state.opportunityTypeFilter="",renderOpportunityFilters(),renderOpportunities(),document.getElementById("chamberOpportunityLocationFilter")?.focus()})}function renderOpportunities(){const e=document.getElementById("opportunitiesList"),t=document.getElementById("opportunitiesLoading"),n=document.getElementById("opportunitiesEmpty");if(!e)return;const a=state.opportunities.filter(e=>!(state.opportunityLocationFilter&&!chamberOpportunityFilterLocations(e).includes(state.opportunityLocationFilter)||state.opportunityTypeFilter&&displayOpportunityType(e)!==state.opportunityTypeFilter)).sort(sortOpportunityRows);if(t?.classList.add("hidden"),!a.length)return e.innerHTML="",void(n&&(n.textContent=state.opportunityLocationFilter||state.opportunityTypeFilter?"No opportunities match these filters.":"No opportunities have been added for this chambers yet.",n.classList.remove("hidden")));n?.classList.add("hidden"),e.innerHTML=a.map(e=>renderOpportunityCard({...e,scheme_name:chamberPublicOpportunityTitle(e)})).join("")}function renderOpportunityCard(e){const t=getClosingDate(e),n=t?formatDate(t):"Not published",a=e.card_summary||e.student_summary||e.status_note||"",i=[opportunityFact("Applications open",formatDate(getOpeningDate(e))),opportunityFact("Closing date",formatDate(t)),opportunityFact("Programme dates",getProgrammeDates(e)),opportunityFact("Duration",e.duration),opportunityFact("Location",e.location),opportunityFact("Delivery",formatStatus(e.delivery_mode)),opportunityFact("Award or payment",e.pay_details||e.salary),opportunityFact("Status",formatStatus(e.status)),opportunityFact("Cycle",e.cycle_year?String(e.cycle_year):"")].filter(Boolean).join(""),r=[detailSection("Who can apply",[e.eligibility,e.year_of_study_requirements,e.degree_requirements,e.academic_requirements]),detailSection("Application process",[e.application_process,e.application_link?"An official application or opportunity link is provided below.":""]),detailSection("Assessments and interviews",[e.assessment_formats,e.assessments,e.interview_dates]),detailSection("Programme structure",[e.programme_structure,e.programme_dates_text,e.programme_dates]),detailSection("Progression",[e.progression_route,e.training_contract_route&&"not_applicable"!==e.training_contract_route?formatStatus(e.training_contract_route):""]),detailSection("Funding, expenses and support",[e.pay_details,e.salary,e.expenses,e.sponsorship]),detailSection("Right to work and visa information",[e.right_to_work_requirements,e.visa_requirements,e.visa_information]),detailSection("Disability support and adjustments",[e.disability_support]),detailSection("Further official information",[e.additional_details,e.status_note])].filter(Boolean).join(""),o=e.application_link||e.source_url||state.chamber.careers_url||state.chamber.website_url;return`\n    <details class="opportunity-item">\n      <summary class="opportunity-summary">\n        <div class="opportunity-deadline ${t?"":"muted"}">\n          <span>Closing</span>\n          <strong>${escapeHtml(n)}</strong>\n        </div>\n\n        <div class="opportunity-summary-main">\n          <h3>${escapeHtml(e.scheme_name||displayOpportunityType(e))}</h3>\n\n          ${a?`<p class="opportunity-card-summary">${escapeHtml(a)}</p>`:""}\n\n          <div class="opportunity-summary-meta">\n            <span>\n              <strong>Type:</strong>\n              ${escapeHtml(displayOpportunityType(e))}\n            </span>\n\n            ${e.location?`\n                  <span>\n                    <strong>Location:</strong>\n                    ${escapeHtml(e.location)}\n                  </span>\n                `:""}\n\n            ${getProgrammeDates(e)?`\n                  <span>\n                    <strong>Programme:</strong>\n                    ${escapeHtml(getProgrammeDates(e))}\n                  </span>\n                `:""}\n          </div>\n\n          ${e.status?`\n                <span class="opportunity-status-pill">\n                  ${escapeHtml(formatStatus(e.status))}\n                </span>\n              `:""}\n        </div>\n\n        <span class="opportunity-chevron" aria-hidden="true">\n          ${chevronIcon()}\n        </span>\n      </summary>\n\n      <div class="opportunity-expanded">\n        ${i?`<div class="opportunity-facts">${i}</div>`:""}\n\n        ${r?`\n              <div class="opportunity-detail-sections">\n                ${r}\n              </div>\n            `:'\n              <p class="opportunity-no-details">\n                Further details have not yet been published.\n              </p>\n            '}\n\n        ${o?`\n              <div class="opportunity-link-panel">\n                ${profileLink(o,e.application_link?"Open official application or opportunity page":"Open official source")}\n              </div>\n            `:""}\n      </div>\n    </details>\n  `}function sortOpportunityRows(e,t){const n=getClosingDate(e),a=getClosingDate(t),i=dateSortGroup(n),r=dateSortGroup(a);if(i!==r)return i-r;const o=dateValue(n),s=dateValue(a);return 2===i?s-o:o!==s?o-s:String(e.scheme_name||"").localeCompare(String(t.scheme_name||""))}function opportunityFilterGroup(e){const t=displayOpportunityType(e).toLowerCase();return t.includes("pupillage")&&!t.includes("mini")?"Pupillage":t.includes("mini-pupillage")?"Mini-pupillage":t.includes("tenancy")||t.includes("third-six")||t.includes("third six")?"Post-pupillage":t.includes("school")||t.includes("outreach")||t.includes("work experience")?"Access and experience":"Other routes"}function renderPracticeAreas(){const e=document.getElementById("practiceAreasList");if(!e)return;if(!state.practiceAreas.length)return void(e.innerHTML=emptyMessage("No official practice-area inventory has been added yet."));const t=new Map;state.practiceAreas.forEach(e=>{const n=inferPracticeAreaGroup(e);t.has(n)||t.set(n,[]),t.get(n).push(e)}),e.innerHTML=Array.from(t.entries()).map(([e,t],n)=>`\n      <details class="practice-area-group" ${0===n?"open":""}>\n        <summary class="practice-group-summary">\n          <div class="practice-group-copy">\n            <span class="practice-group-label">Official inventory</span>\n            <h3>${escapeHtml(e)}</h3>\n            <p>\n              ${escapeHtml(`${t.length} practice area${1===t.length?"":"s"}`)}\n            </p>\n          </div>\n\n          <span class="practice-group-action" aria-hidden="true"></span>\n        </summary>\n\n        <div class="practice-group-expanded">\n          ${t.map(e=>`\n            <article class="practice-area-card">\n              <div class="practice-area-title-row">\n                <h4>${escapeHtml(e.practice_area)}</h4>\n                ${e.featured?'<span class="featured-tag">Featured</span>':""}\n              </div>\n\n              ${e.student_summary||e.description?`\n                    <p>\n                      ${escapeHtml(e.student_summary||e.description)}\n                    </p>\n                  `:""}\n\n              ${e.source_url?`\n                    <div class="research-source-row">\n                      ${profileLink(e.source_url,"Official practice-area source")}\n                    </div>\n                  `:""}\n            </article>\n          `).join("")}\n        </div>\n      </details>\n    `).join("")}function inferPracticeAreaGroup(e){const t=`${e.source_title||""} ${e.source_url||""}`.toLowerCase();return t.includes("brighton")?"Brighton":t.includes("london")?"London":"Chambers-wide"}function renderLocations(){const e=document.getElementById("locationsList");if(!e)return;const t=[...state.locations];!t.length&&state.chamber.head_office_city&&t.push({location_name:state.chamber.head_office_city,city:state.chamber.head_office_city,country:state.chamber.head_office_country}),t.length?e.innerHTML=t.map(e=>{const t=e.location_name||e.city||"Chambers",n=chamberCanonicalCountry(e.country)||String(e.country||"").trim(),a=e.full_address||e.address||e.office_address||"",i=e.telephone||e.phone||"",r=e.offers_student_recruitment??e.student_recruitment;return`\n      <article class="location-card">\n        <div class="location-card-header">\n          <div>\n            <h3>${escapeHtml(t)}</h3>\n\n            ${e.region||n?`\n                  <p class="location-card-subtitle">\n                    ${escapeHtml([e.region,n].filter(Boolean).join(" · "))}\n                  </p>\n                `:""}\n          </div>\n\n          ${e.location_category?`\n                <span class="status-pill">\n                  ${escapeHtml(e.location_category)}\n                </span>\n              `:""}\n        </div>\n\n        ${a?`<p class="location-address">${escapeHtml(a)}</p>`:""}\n\n        ${i?`<p class="location-contact">${escapeHtml(i)}</p>`:""}\n\n        <div class="location-tags">\n          ${!0===r?'<span class="status-pill">Student recruitment</span>':""}\n\n          ${!0===e.is_physical_location?'<span class="status-pill">Physical chambers</span>':""}\n        </div>\n\n        ${e.student_recruitment_note?`\n              <p class="location-note">\n                ${escapeHtml(e.student_recruitment_note)}\n              </p>\n            `:""}\n\n        <div class="location-actions">\n          ${e.office_url?profileLink(e.office_url,"Official location page"):""}\n\n          ${e.careers_url?profileLink(e.careers_url,"Location careers"):""}\n\n          ${e.source_url&&e.source_url!==e.office_url?profileLink(e.source_url,"Official source"):""}\n        </div>\n      </article>\n    `}).join(""):e.innerHTML=emptyMessage("No chambers locations have been added yet.")}function renderPupillageAndTenancy(){const e=document.getElementById("pupillageTenancyList");if(!e)return;const t=state.chamber,n=state.opportunities.filter(e=>/pupillage/i.test(displayOpportunityType(e))),a=[];t.pupillage_overview&&a.push(researchItem("Pupillage","Pupillage structure",shortSummary(t.pupillage_overview),[researchTextSection("Published overview",t.pupillage_overview),researchTextSection("Current researched routes",n.filter(e=>!/mini/i.test(displayOpportunityType(e))).map(e=>e.scheme_name).filter(Boolean).join(" · "))],t.careers_url)),t.mini_pupillage_overview&&a.push(researchItem("Mini-pupillage","Mini-pupillage structure",shortSummary(t.mini_pupillage_overview),[researchTextSection("Published overview",t.mini_pupillage_overview),researchTextSection("Current researched routes",n.filter(e=>/mini/i.test(displayOpportunityType(e))).map(e=>e.scheme_name).filter(Boolean).join(" · "))],findLinkUrlByTypes(["mini_pupillage","assessed_mini_pupillage"]))),t.tenancy_overview&&a.push(researchItem("Progression","Tenancy",shortSummary(t.tenancy_overview),[researchTextSection("Published overview",t.tenancy_overview),researchTextSection("Opportunity-specific progression",uniqueCleanPoints(state.opportunities.map(e=>e.progression_route).filter(Boolean)).join(" · "))],findLinkUrlByTypes(["pupillage"])));const i=uniqueCleanPoints(state.opportunities.flatMap(e=>[e.assessment_formats,e.assessments,e.interview_dates]).filter(Boolean)).join(" · ");i&&a.push(researchItem("Selection","Assessments and interviews",shortSummary(i),[researchTextSection("Published assessment information",i)],findLinkUrlByTypes(["application_portal","pupillage"]))),(t.pupillage_gateway_member||t.pupillage_gateway_url)&&a.push(researchItem("Applications","Pupillage Gateway","This chambers uses or is recorded as a member of the Pupillage Gateway.",[researchFacts([["Gateway member",t.pupillage_gateway_member?"Yes":"Not confirmed"],["Application route","Check each cycle-specific opportunity record"]])],t.pupillage_gateway_url)),e.innerHTML=a.length?a.join(""):emptyMessage("Pupillage and tenancy information has not yet been added.")}function renderFunding(){const e=document.getElementById("fundingList");if(!e)return;const t=[],n=new Set;state.opportunities.forEach(e=>{const a=e.pay_details||e.salary,i=uniqueCleanPoints([e.expenses,e.sponsorship]).join(" · ");if(!hasText(a)&&!hasText(i))return;const r=normaliseText(`${e.scheme_name}|${a}|${i}`);n.has(r)||(n.add(r),t.push(`\n      <article class="funding-card">\n        <h3>${escapeHtml(e.scheme_name||displayOpportunityType(e))}</h3>\n\n        ${a?`<p class="funding-value">${escapeHtml(a)}</p>`:""}\n\n        ${i?`<p>${escapeHtml(i)}</p>`:""}\n\n        ${e.source_url||e.application_link?`\n              <div class="research-source-row">\n                ${profileLink(e.application_link||e.source_url,"Official funding source")}\n              </div>\n            `:""}\n      </article>\n    `))}),e.innerHTML=t.length?t.join(""):emptyMessage("No pupillage award, bursary, reimbursement or expenses information is currently stored.")}function renderEdi(){const e=document.getElementById("ediList");if(!e)return;const t=[],n=uniqueCleanPoints(state.opportunities.map(e=>e.disability_support).filter(Boolean));n.length&&t.push(researchItem("Disability and access","Applicant adjustments",shortSummary(n.join(" · ")),[researchTextSection("Published support",n.join(" · "))],findLinkUrlByTypes(["edi","contact"])));const a=state.locations.filter(e=>hasText(e.student_recruitment_note)&&/access|wheelchair|step-free|adjustment|facilit/i.test(e.student_recruitment_note)).map(e=>({name:e.location_name||e.city||"Location",note:e.student_recruitment_note,url:e.source_url||e.office_url}));a.length&&t.push(researchItem("Physical access","Chambers accessibility",a.map(e=>`${e.name}: ${e.note}`).join(" "),a.map(e=>researchTextSection(e.name,e.note)),a[0].url));const i=state.opportunities.filter(e=>/assessed mini|positive|socio-economic|social mobility|less advantaged|outreach/i.test([e.scheme_name,e.eligibility,e.additional_details,e.student_summary].filter(Boolean).join(" ")));i.length&&t.push(researchItem("Positive action","Access and social mobility programmes",i.map(e=>e.scheme_name).filter(Boolean).join(" · "),i.map(e=>researchTextSection(e.scheme_name||"Programme",uniqueCleanPoints([e.eligibility,e.pay_details,e.expenses,e.progression_route]).join(" · "))),i[0].application_link||i[0].source_url));const r=state.links.filter(e=>["edi","contact"].includes(String(e.link_type||"").toLowerCase()));r.length&&t.push(researchItem("Policies and contacts","Official EDI and accessibility pages",r.map(e=>e.label).filter(Boolean).join(" · "),[researchTextSection("Official pages",r.map(e=>e.label).filter(Boolean).join(" · "))],r[0].url)),e.innerHTML=t.length?t.join(""):emptyMessage("No specific EDI, disability-access or adjustment information is currently stored.")}function renderHighlights(){const e=document.getElementById("highlightsList");if(!e)return;const t=[];if(state.rankings.length){const e=state.rankings.map(e=>researchTextSection([e.ranking_band,e.ranking_name].filter(Boolean).join(" — "),[e.practice_area,e.circuit_or_region,e.ranking_source,e.ranking_year].filter(Boolean).join(" · ")));t.push(researchItem("Independent recognition","Current rankings",state.rankings.map(e=>[e.ranking_band,e.ranking_name].filter(Boolean).join(" in ")).join(" · "),e,state.rankings[0].source_url))}state.chamber.year_founded&&t.push(researchItem("History","Founded",`The chambers records ${state.chamber.year_founded} as its founding year.`,[researchFacts([["Founded",String(state.chamber.year_founded)],["Head office",state.chamber.head_office_city]])],state.chamber.website_url)),state.locations.length&&t.push(researchItem("Structure","Locations and recruitment",`${state.locations.length} researched location${1===state.locations.length?"":"s"}: ${state.locations.map(e=>e.location_name||e.city).filter(Boolean).join(" · ")}.`,state.locations.map(e=>researchTextSection(e.location_name||e.city||"Location",uniqueCleanPoints([e.student_recruitment_note,!0===e.offers_student_recruitment?"Student recruitment is recorded for this location.":""]).join(" "))),state.locations[0].office_url||state.locations[0].source_url)),state.practiceAreas.length&&t.push(researchItem("Practice breadth","Official practice-area inventory",`${state.practiceAreas.length} practice area${1===state.practiceAreas.length?"":"s"} are recorded from official chambers sources.`,[researchTextSection("Featured areas",state.practiceAreas.filter(e=>e.featured).map(e=>e.practice_area).join(" · "))],state.practiceAreas[0].source_url)),t.push(researchItem("Research audit","Vacatory research status",`Profile status: ${formatStatus(state.chamber.profile_status)}. Research status: ${formatStatus(state.chamber.organisation_research_status||state.chamber.research_status)}.`,[researchFacts([["Research checked",formatDate(state.chamber.organisation_research_checked_on||state.chamber.research_checked_on)],["Next review",formatDate(state.chamber.organisation_next_review_on||state.chamber.next_review_on)],["Opportunities",String(state.opportunities.length)],["Official links",String(state.links.length)]])],"")),e.innerHTML=t.join("")}function renderLinksAndSocials(){const e=document.getElementById("linksSocialsList");if(!e)return;const t=deduplicateObjects([{link_type:"main_website",label:"Official chambers website",url:state.chamber.website_url,audience:"All visitors",display_order:0,is_primary:!0},{link_type:"careers",label:"Official careers information",url:state.chamber.careers_url,audience:"Students and applicants",display_order:5,is_primary:!0},{link_type:"application_portal",label:"Pupillage Gateway",url:state.chamber.pupillage_gateway_url,audience:"Pupillage applicants",display_order:8,is_primary:!0},...state.links].filter(e=>hasText(e.url)),e=>normaliseText(e.url)).sort((e,t)=>Number(e.display_order??500)-Number(t.display_order??500));if(!t.length)return void(e.innerHTML=emptyMessage("No official links have been added yet."));const n=new Map;t.forEach(e=>{const t=linkCategory(e);n.has(t)||n.set(t,[]),n.get(t).push(e)}),e.innerHTML=Array.from(n.entries()).map(([e,t])=>`\n      <section class="links-socials-group">\n        <div class="links-socials-heading">\n          <h3>${escapeHtml(e)}</h3>\n          <p>${escapeHtml(linkCategoryDescription(e))}</p>\n        </div>\n\n        <div class="links-socials-grid">\n          ${t.map(e=>`\n            <article class="link-social-card">\n              <div class="link-social-copy">\n                <span class="link-social-type">\n                  ${escapeHtml(formatLinkType(e.link_type))}\n                </span>\n\n                <h4>${escapeHtml(e.label||formatLinkType(e.link_type))}</h4>\n\n                ${e.audience||e.region||e.country?`\n                      <p>\n                        ${escapeHtml([e.audience,e.region,e.country].filter(Boolean).join(" · "))}\n                      </p>\n                    `:""}\n              </div>\n\n              ${profileLink(e.url,"Open official page")}\n            </article>\n          `).join("")}\n        </div>\n      </section>\n    `).join("")}function linkCategory(e){const t=String(e.link_type||"").toLowerCase();return["linkedin","instagram","youtube","tiktok","facebook","x","twitter"].includes(t)?"Social media":["edi","contact","accessibility"].includes(t)?"EDI, access and contact":t.includes("pupillage")||t.includes("application")||t.includes("mini_")||"opportunity"===t?"Applications and opportunities":t.includes("office")||t.includes("location")?"Locations":"Websites and careers"}function linkCategoryDescription(e){return{"Websites and careers":"Official chambers and careers pages.","Applications and opportunities":"Official application portals and programme pages.","EDI, access and contact":"Official inclusion, accessibility and contact information.",Locations:"Official London, regional or office-specific pages.","Social media":"Verified official social accounts."}[e]||"Official chambers links."}function researchItem(e,t,n,a,i){const r=(a||[]).filter(Boolean).join("");return`\n    <details class="research-item">\n      <summary class="research-item-summary">\n        <div class="research-item-copy">\n          <span class="research-item-label">${escapeHtml(e)}</span>\n          <h3>${escapeHtml(t)}</h3>\n          ${n?`<p>${escapeHtml(n)}</p>`:""}\n        </div>\n\n        <span class="research-item-action" aria-hidden="true"></span>\n      </summary>\n\n      <div class="research-item-expanded">\n        ${r}\n\n        ${i?`\n              <div class="research-source-row">\n                ${profileLink(i,"Open official source")}\n              </div>\n            `:""}\n      </div>\n    </details>\n  `}function researchTextSection(e,t){return hasText(t)?`\n    <section class="research-detail-section">\n      <h4>${escapeHtml(e)}</h4>\n      <p>${escapeHtml(t)}</p>\n    </section>\n  `:""}function researchFacts(e){const t=(e||[]).filter(([,e])=>hasText(e)).map(([e,t])=>`\n      <div class="research-fact">\n        <span>${escapeHtml(e)}</span>\n        <strong>${escapeHtml(t)}</strong>\n      </div>\n    `).join("");return t?`<div class="research-facts">${t}</div>`:""}function detailSection(e,t){const n=uniqueCleanPoints((t||[]).flatMap(splitIntoBulletPoints));return n.length?`\n    <section class="opportunity-detail-section">\n      <h4>${escapeHtml(e)}</h4>\n\n      <ul class="opportunity-bullets">\n        ${n.map(e=>`\n          <li>${escapeHtml(e)}</li>\n        `).join("")}\n      </ul>\n    </section>\n  `:""}function opportunityFact(e,t){return hasText(t)?`\n    <div class="fact">\n      <span class="fact-label">${escapeHtml(e)}</span>\n      <strong class="fact-value">${escapeHtml(t)}</strong>\n    </div>\n  `:""}function glanceCard(e,t,n,a){return`\n    <article class="glance-card">\n      <div class="glance-card-heading">\n        <h3>${escapeHtml(e)}</h3>\n\n        ${a?`\n              <span class="evidence-badge ${normaliseStatusClass(a)}">\n                ${escapeHtml(formatStatus(a))}\n              </span>\n            `:""}\n      </div>\n\n      <p class="glance-value">${escapeHtml(t)}</p>\n\n      ${n?`<p class="glance-note">${escapeHtml(n)}</p>`:""}\n    </article>\n  `}function overviewSummaryCard(e,t,n){return`\n    <article class="overview-summary-card">\n      <h3>${escapeHtml(e)}</h3>\n      <p>${escapeHtml(t)}</p>\n      ${n?`<p>${escapeHtml(n)}</p>`:""}\n    </article>\n  `}function displayOpportunityType(e){return e.scheme_type||inferOpportunityTypeFromSlug(e.slug)||"Opportunity"}function inferOpportunityTypeFromSlug(e){const t=String(e||"").toLowerCase();return t.includes("assessed-mini")?"Assessed mini-pupillage":t.includes("mini-pupillage")?"Mini-pupillage":t.includes("pupillage")?"Pupillage":t.includes("probationary-tenancy")||t.includes("third-six")?"Probationary tenancy":t.includes("school")||t.includes("outreach")?"School student programme":t.includes("work-experience")?"Work experience":""}function getOpeningDate(e){return e.application_open_date||e.application_open||e.opens_on||""}function getClosingDate(e){return e.application_close_date||e.application_deadline||e.deadline||e.closes_on||""}function getProgrammeDates(e){if(hasText(e.programme_dates))return e.programme_dates;if(hasText(e.programme_dates_text))return e.programme_dates_text;const t=e.programme_start_date||e.programme_start||"",n=e.programme_end||"";return t&&n?`${formatDate(t)} to ${formatDate(n)}`:t?formatDate(t):""}function buildAwardSummary(e){const t=e.filter(e=>hasText(e.pay_details)||hasText(e.salary));if(!t.length)return null;const n=t.find(e=>/pupillage/i.test(displayOpportunityType(e))&&!/mini/i.test(displayOpportunityType(e)))||t[0];return{value:n.salary||n.pay_details,note:n.scheme_name||"Officially published funding information"}}function hasAccessibilityInformation(){const e=state.links.some(e=>/edi|access|contact/i.test(String(e.link_type||""))),t=state.locations.some(e=>/access|wheelchair|step-free|adjustment|facilit/i.test(String(e.student_recruitment_note||"")));return e||t}function findLinkUrlByTypes(e){const t=e.map(e=>String(e).toLowerCase()),n=state.links.find(e=>t.includes(String(e.link_type||"").toLowerCase()));return n?.url||""}function isOpportunityOpenNow(e){const t=parseDate(getOpeningDate(e)),n=parseDate(getClosingDate(e)),a=startOfToday();return t&&n?t<=a&&n>=a:!t&&n?n>=a&&!/closed/i.test(String(e.status||"")):/open/i.test(String(e.status||""))&&!/closed/i.test(String(e.status||""))}function profileLink(e,t){const n=safeUrl(e);return n?`\n    <a\n      class="profile-external-link"\n      href="${escapeHtml(n)}"\n      target="_blank"\n      rel="noopener noreferrer"\n    >\n      <span>${escapeHtml(t)}</span>\n      ${externalLinkIcon()}\n    </a>\n  `:""}function heroAction(e,t,n){const a=safeUrl(e);return a?`\n    <a\n      class="hero-action ${n?"primary":""}"\n      href="${escapeHtml(a)}"\n      target="_blank"\n      rel="noopener noreferrer"\n    >\n      <span>${escapeHtml(t)}</span>\n      ${externalLinkIcon()}\n    </a>\n  `:""}function metaPill(e,t){return`\n    <span class="profile-meta-pill">\n      ${e}\n      <span>${escapeHtml(t)}</span>\n    </span>\n  `}function emptyMessage(e){return`\n    <p class="profile-section-message">\n      ${escapeHtml(e)}\n    </p>\n  `}function formatLinkType(e){return String(e||"Official link").replaceAll("_"," ").replace(/\b\w/g,e=>e.toUpperCase())}function formatStatus(e){return hasText(e)?String(e).replaceAll("_"," ").replace(/\b\w/g,e=>e.toUpperCase()):""}function normaliseStatusClass(e){const t=normaliseText(e).replace(/\s+/g,"-");return t.includes("verified")||t.includes("confirmed")?"verified":t.includes("unpublished")||t.includes("not-published")||t.includes("needs-review")?"unpublished":t||"unpublished"}function formatDate(e){const t=parseDate(e);return t?new Intl.DateTimeFormat("en-GB",{day:"numeric",month:"long",year:"numeric"}).format(t):""}function parseDate(e){if(!e)return null;if(e instanceof Date&&!Number.isNaN(e.getTime()))return new Date(e.getFullYear(),e.getMonth(),e.getDate());const t=String(e).trim(),n=t.match(/^(\d{4})-(\d{2})-(\d{2})/);if(n){const e=new Date(Number(n[1]),Number(n[2])-1,Number(n[3]));return Number.isNaN(e.getTime())?null:e}const a=new Date(t);return Number.isNaN(a.getTime())?null:a}function dateValue(e){const t=parseDate(e);return t?t.getTime():Number.MAX_SAFE_INTEGER}function dateSortGroup(e){const t=parseDate(e);return t?t>=startOfToday()?0:2:1}function isFutureOrToday(e){const t=parseDate(e);return Boolean(t&&t>=startOfToday())}function startOfToday(){const e=new Date;return new Date(e.getFullYear(),e.getMonth(),e.getDate())}function splitIntoBulletPoints(e){if(!hasText(e))return[];if(Array.isArray(e))return e.flatMap(splitIntoBulletPoints);if("object"==typeof e)return Object.values(e).flatMap(splitIntoBulletPoints);let t=String(e).replace(/\r/g,"\n").replace(/[•●▪◦]/g,"\n").replace(/\s+[–—-]\s+/g,"\n").replace(/;\s+/g,"\n").replace(/\n{2,}/g,"\n").trim().split("\n").map(cleanPoint).filter(Boolean);return 1===t.length&&t[0].length>180&&(t=t[0].split(/(?<=[.!?])\s+(?=[A-Z0-9£])/).map(cleanPoint).filter(Boolean)),t}function cleanPoint(e){return String(e||"").replace(/^[\s:;,.–—-]+/,"").replace(/\s+/g," ").trim()}function uniqueCleanPoints(e){const t=new Set,n=[];return(e||[]).forEach(e=>{if(!hasText(e))return;const a=cleanPoint(e),i=normaliseText(a);i&&!t.has(i)&&(t.add(i),n.push(a))}),n}function deduplicateObjects(e,t){const n=new Set,a=[];return(e||[]).forEach(e=>{const i=t(e);i&&!n.has(i)&&(n.add(i),a.push(e))}),a}function deduplicateStrings(e){return uniqueCleanPoints(e)}function shortSummary(e,t=230){const n=cleanPoint(e);return n.length<=t?n:`${n.slice(0,t).replace(/\s+\S*$/,"")}…`}function normaliseText(e){return String(e||"").trim().toLowerCase().replace(/\s+/g," ")}function hasText(e){return null!=e&&(Array.isArray(e)?e.some(hasText):"object"==typeof e?Object.values(e).some(hasText):""!==String(e).trim())}function safeUrl(e){if(!hasText(e))return"";try{const t=new URL(String(e),window.location.href);return["http:","https:"].includes(t.protocol)?t.href:""}catch{return""}}function escapeHtml(e){return String(e??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;")}function externalLinkIcon(){return'\n    <svg\n      viewBox="0 0 24 24"\n      fill="none"\n      stroke="currentColor"\n      stroke-width="2"\n      aria-hidden="true"\n    >\n      <path d="M14 3h7v7"></path>\n      <path d="M10 14L21 3"></path>\n      <path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"></path>\n    </svg>\n  '}function chevronIcon(){return'\n    <svg\n      viewBox="0 0 24 24"\n      fill="none"\n      stroke="currentColor"\n      stroke-width="2"\n    >\n      <path d="M6 9l6 6 6-6"></path>\n    </svg>\n  '}function locationIcon(){return'\n    <svg\n      viewBox="0 0 24 24"\n      fill="none"\n      stroke="currentColor"\n      stroke-width="2"\n      aria-hidden="true"\n    >\n      <path d="M12 21s6-5.1 6-11a6 6 0 1 0-12 0c0 5.9 6 11 6 11z"></path>\n      <circle cx="12" cy="10" r="2"></circle>\n    </svg>\n  '}function circuitIcon(){return'\n    <svg\n      viewBox="0 0 24 24"\n      fill="none"\n      stroke="currentColor"\n      stroke-width="2"\n      aria-hidden="true"\n    >\n      <circle cx="12" cy="12" r="9"></circle>\n      <path d="M12 7v5l3 2"></path>\n    </svg>\n  '}function buildingIcon(){return'\n    <svg\n      viewBox="0 0 24 24"\n      fill="none"\n      stroke="currentColor"\n      stroke-width="2"\n      aria-hidden="true"\n    >\n      <path d="M4 21V6l8-3 8 3v15"></path>\n      <path d="M9 21v-5h6v5"></path>\n      <path d="M8 9h.01M12 9h.01M16 9h.01M8 13h.01M12 13h.01M16 13h.01"></path>\n    </svg>\n  '}function linkIcon(){return'\n    <svg\n      viewBox="0 0 24 24"\n      fill="none"\n      stroke="currentColor"\n      stroke-width="2"\n      aria-hidden="true"\n    >\n      <path d="M10 13a5 5 0 0 0 7.1 0l2.8-2.8a5 5 0 0 0-7.1-7.1L11.2 4.7"></path>\n      <path d="M14 11a5 5 0 0 0-7.1 0l-2.8 2.8a5 5 0 0 0 7.1 7.1l1.6-1.6"></path>\n    </svg>\n  '}
+// =======================================
+// Vacatory
+// chamber-profile.js
+// Full barristers' chambers research profile
+// =======================================
+
+"use strict";
+
+const chamberParams = new URLSearchParams(window.location.search);
+const chamberId = chamberParams.get("id");
+
+const state = {
+  chamber: null,
+  opportunities: [],
+  practiceAreas: [],
+  locations: [],
+  links: [],
+  rankings: [],
+  opportunityLocationFilter: "",
+  opportunityTypeFilter: ""
+};
+
+document.addEventListener("DOMContentLoaded", () => {
+  setupProfileTabs();
+
+  if (!chamberId) {
+    showProfileError();
+    return;
+  }
+
+  loadChamberProfile();
+});
+
+/* =======================================
+   Main loading
+======================================= */
+
+async function loadChamberProfile() {
+  if (typeof client === "undefined") {
+    console.error("The Supabase client is unavailable.");
+    showProfileError();
+    return;
+  }
+
+  try {
+    const [chamberResult, organisationResult] = await Promise.all([
+      client
+        .from("chambers")
+        .select("*")
+        .eq("organisation_id", chamberId)
+        .eq("active", true)
+        .single(),
+
+      client
+        .from("legal_organisations")
+        .select("*")
+        .eq("id", chamberId)
+        .eq("organisation_type", "barristers_chambers")
+        .eq("active", true)
+        .single()
+    ]);
+
+    if (chamberResult.error || !chamberResult.data) {
+      throw chamberResult.error || new Error("Chambers record not found.");
+    }
+
+    if (organisationResult.error || !organisationResult.data) {
+      throw organisationResult.error || new Error("Organisation record not found.");
+    }
+
+    const chamber = {
+      ...organisationResult.data,
+      ...chamberResult.data,
+      organisation_id: chamberResult.data.organisation_id,
+      id: organisationResult.data.id,
+      name: organisationResult.data.name,
+      short_name: organisationResult.data.short_name,
+      logo_url: organisationResult.data.logo_url,
+      website_url: organisationResult.data.website_url,
+      careers_url: organisationResult.data.careers_url,
+      overview: organisationResult.data.overview,
+      official_domain: organisationResult.data.official_domain,
+      head_office_city: organisationResult.data.head_office_city,
+      head_office_country: organisationResult.data.head_office_country,
+      organisation_research_status: organisationResult.data.research_status,
+      organisation_research_checked_on:
+        organisationResult.data.research_checked_on,
+      organisation_next_review_on:
+        organisationResult.data.next_review_on
+    };
+
+    state.chamber = chamber;
+
+    const [
+      opportunities,
+      practiceAreas,
+      locations,
+      links,
+      rankings
+    ] = await Promise.all([
+      loadOpportunityRows(chamber.organisation_id),
+      loadPracticeAreaRows(chamber.organisation_id),
+      loadLocationRows(chamber.organisation_id),
+      loadLinkRows(chamber.organisation_id),
+      loadRankingRows(chamber.organisation_id)
+    ]);
+
+    state.opportunities = opportunities;
+    state.practiceAreas = practiceAreas;
+    state.locations = locations;
+    state.links = links;
+    state.rankings = rankings;
+
+    renderHeader(chamber);
+    renderOverview();
+    renderOpportunityFilters();
+    renderOpportunities();
+    renderPracticeAreas();
+    renderLocations();
+    renderPupillageAndTenancy();
+    renderFunding();
+    renderEdi();
+    renderHighlights();
+    renderLinksAndSocials();
+
+    hideLoadingAndShowProfile();
+  } catch (error) {
+    console.error("Unable to load chambers profile:", error);
+    showProfileError();
+  }
+}
+
+async function loadOpportunityRows(organisationId) {
+  const api = window.VacatoryOpportunityData;
+
+  if (!api?.loadProviderOpportunities) {
+    throw new Error(
+      "Load opportunity-data.js before chamber-profile.js."
+    );
+  }
+
+  const opportunities = await api.loadProviderOpportunities({
+    client,
+    providerId: organisationId,
+    includeSearchIndex: true
+  });
+
+  return deduplicateObjects(
+    opportunities.map(chamberCanonicalOpportunityView),
+    row => String(row.id || row.slug)
+  ).sort((a, b) =>
+    Number(a.display_order || 0) - Number(b.display_order || 0)
+  );
+}
+
+/* VACATORY_CANONICAL_CHAMBER_PROFILE_FOUNDATION_20260817
+   career_opportunities_public_view is the sole public opportunity boundary.
+   This adapter preserves the established chamber tabs and presentation while
+   the renderer is migrated away from the legacy vacation_schemes shape. */
+function chamberCanonicalUniqueText(values) {
+  return [
+    ...new Set(
+      (values || [])
+        .flat()
+        .map(value => String(value || "").trim())
+        .filter(Boolean)
+    )
+  ].join("\n");
+}
+
+function chamberCanonicalCycleText(opportunity, field) {
+  return chamberCanonicalUniqueText([
+    opportunity?.[field],
+    ...(opportunity?.cycles || []).map(cycle => cycle?.[field])
+  ]);
+}
+
+function chamberCanonicalCompensation(opportunity) {
+  const api = window.VacatoryOpportunityData;
+  const values = (opportunity?.compensation || [])
+    .map(item => api.formatCompensation(item))
+    .filter(Boolean);
+
+  if (!values.length) {
+    values.push(
+      opportunity?.primaryCompensation?.text,
+      opportunity?.primaryCompensation?.details
+    );
+  }
+
+  return chamberCanonicalUniqueText(values);
+}
+
+function chamberCanonicalOpportunityView(opportunity) {
+  const cycleTiming = chamberCanonicalUniqueText(
+    (opportunity.cycles || []).flatMap(cycle => [
+      cycle.applicationDatesText,
+      cycle.programmeDatesText
+    ])
+  );
+  const expenses = chamberCanonicalUniqueText([
+    chamberCanonicalCycleText(opportunity, "expensesText"),
+    chamberCanonicalCycleText(opportunity, "travelSupportText"),
+    chamberCanonicalCycleText(opportunity, "accommodationSupportText")
+  ]);
+  const compensation = chamberCanonicalCompensation(opportunity);
+  const statusNote = chamberCanonicalUniqueText([
+    opportunity.raw?.source_status_note,
+    ...(opportunity.cycles || []).map(
+      cycle => cycle.raw?.source_status_note
+    )
+  ]);
+
+  return {
+    id: opportunity.opportunityId,
+    source_opportunity_id: opportunity.sourceOpportunityId,
+    slug: opportunity.opportunitySlug,
+    public_title: opportunity.publicTitle,
+    scheme_name: opportunity.publicTitle,
+    scheme_type: opportunity.opportunityTypeLabel,
+    card_summary: opportunity.publicSummary,
+    student_summary: opportunity.publicSummary,
+    delivery_mode: opportunity.deliveryMode,
+    location:
+      opportunity.publicLocationLabel ||
+      opportunity.locationSummary,
+    countries: opportunity.countries || [],
+    cities: opportunity.cities || [],
+    country: (opportunity.countries || [])[0] || "",
+    application_open_date: opportunity.opensOn,
+    application_close_date: opportunity.closesOn,
+    programme_start_date: opportunity.programmeStartsOn,
+    programme_end: opportunity.programmeEndsOn,
+    programme_dates_text: chamberCanonicalUniqueText([
+      opportunity.programmeDatesText,
+      cycleTiming
+    ]),
+    duration: opportunity.durationText,
+    status: opportunity.publicApplicationStatus,
+    status_note: statusNote,
+    cycle_year:
+      opportunity.applicationYear ||
+      opportunity.programmeYear ||
+      opportunity.intakeYear,
+    eligibility: chamberCanonicalUniqueText([
+      chamberCanonicalCycleText(opportunity, "audienceText"),
+      chamberCanonicalCycleText(opportunity, "eligibilityText")
+    ]),
+    year_of_study_requirements:
+      chamberCanonicalCycleText(opportunity, "studyStageText"),
+    academic_requirements:
+      chamberCanonicalCycleText(opportunity, "academicCriteria"),
+    application_process:
+      chamberCanonicalCycleText(opportunity, "applicationProcessText"),
+    assessment_formats:
+      chamberCanonicalCycleText(opportunity, "assessmentsText"),
+    programme_structure:
+      chamberCanonicalCycleText(opportunity, "programmeStructureText"),
+    progression_route:
+      chamberCanonicalCycleText(opportunity, "progressionRouteText"),
+    pay_details: compensation,
+    salary: compensation,
+    sponsorship:
+      chamberCanonicalCycleText(opportunity, "fundingText"),
+    expenses,
+    right_to_work_requirements:
+      chamberCanonicalCycleText(opportunity, "rightToWorkText"),
+    disability_support:
+      chamberCanonicalCycleText(opportunity, "disabilitySupportText"),
+    additional_details:
+      chamberCanonicalCycleText(opportunity, "additionalDetailsText"),
+    application_link:
+      opportunity.applicationUrl || opportunity.officialUrl,
+    source_url: opportunity.officialUrl,
+    research_checked_on: opportunity.lastVerifiedOn,
+    display_order: opportunity.displayOrder,
+    canonical_opportunity: opportunity
+  };
+}
+
+async function loadPracticeAreaRows(organisationId) {
+  const { data, error } = await client
+    .from("chamber_practice_areas")
+    .select("*")
+    .eq("organisation_id", organisationId)
+    .eq("active", true)
+    .order("display_order", { ascending: true })
+    .order("practice_area", { ascending: true });
+
+  if (error) {
+    console.warn("Unable to load chamber practice areas:", error.message);
+    return [];
+  }
+
+  return data || [];
+}
+
+async function loadLocationRows(organisationId) {
+  const { data, error } = await client
+    .from("organisation_locations")
+    .select("*")
+    .eq("organisation_id", organisationId)
+    .eq("active", true)
+    .order("display_order", { ascending: true });
+
+  if (error) {
+    console.warn("Unable to load chamber locations:", error.message);
+    return [];
+  }
+
+  return data || [];
+}
+
+async function loadLinkRows(organisationId) {
+  const { data, error } = await client
+    .from("chamber_links")
+    .select("*")
+    .eq("organisation_id", organisationId)
+    .eq("active", true)
+    .order("display_order", { ascending: true });
+
+  if (error) {
+    console.warn("Unable to load chamber links:", error.message);
+    return [];
+  }
+
+  return data || [];
+}
+
+async function loadRankingRows(organisationId) {
+  const { data, error } = await client
+    .from("chamber_rankings")
+    .select("*")
+    .eq("organisation_id", organisationId)
+    .eq("is_current", true)
+    .order("ranking_year", { ascending: false })
+    .order("ranking_name", { ascending: true });
+
+  if (error) {
+    console.warn("Unable to load chamber rankings:", error.message);
+    return [];
+  }
+
+  return data || [];
+}
+
+function hideLoadingAndShowProfile() {
+  document.getElementById("loadingState")?.classList.add("hidden");
+  document.getElementById("errorState")?.classList.add("hidden");
+  document.getElementById("profileContent")?.classList.remove("hidden");
+}
+
+function showProfileError() {
+  document.getElementById("loadingState")?.classList.add("hidden");
+  document.getElementById("profileContent")?.classList.add("hidden");
+  document.getElementById("errorState")?.classList.remove("hidden");
+}
+
+/* =======================================
+   Tabs and navigation
+======================================= */
+
+function setupProfileTabs() {
+  const tabs = Array.from(document.querySelectorAll(".tab-btn"));
+  const panels = Array.from(document.querySelectorAll(".tab-panel"));
+
+  tabs.forEach(tab => {
+    tab.addEventListener("click", () => {
+      const target = tab.dataset.tab;
+
+      tabs.forEach(item => {
+        const isActive = item === tab;
+        item.classList.toggle("active", isActive);
+        item.setAttribute("aria-selected", String(isActive));
+        item.tabIndex = isActive ? 0 : -1;
+      });
+
+      panels.forEach(panel => {
+        const isActive = panel.id === `tab-${target}`;
+        panel.classList.toggle("active", isActive);
+        panel.hidden = !isActive;
+      });
+
+      const activePanel = document.getElementById(`tab-${target}`);
+      activePanel?.focus?.({ preventScroll: true });
+    });
+
+    tab.addEventListener("keydown", event => {
+      const currentIndex = tabs.indexOf(tab);
+      let nextIndex = null;
+
+      if (event.key === "ArrowRight") {
+        nextIndex = (currentIndex + 1) % tabs.length;
+      }
+
+      if (event.key === "ArrowLeft") {
+        nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+      }
+
+      if (event.key === "Home") {
+        nextIndex = 0;
+      }
+
+      if (event.key === "End") {
+        nextIndex = tabs.length - 1;
+      }
+
+      if (nextIndex !== null) {
+        event.preventDefault();
+        tabs[nextIndex].focus();
+        tabs[nextIndex].click();
+      }
+    });
+  });
+
+  panels.forEach(panel => {
+    panel.hidden = !panel.classList.contains("active");
+    panel.tabIndex = -1;
+  });
+
+  tabs.forEach(tab => {
+    tab.tabIndex = tab.classList.contains("active") ? 0 : -1;
+  });
+}
+
+/* =======================================
+   Header
+======================================= */
+
+
+function upsertChamberSeoMeta(attribute, key, content) {
+  let element = document.head.querySelector(
+    `meta[${attribute}="${key}"]`
+  );
+
+  if (!element) {
+    element = document.createElement("meta");
+    element.setAttribute(attribute, key);
+    document.head.appendChild(element);
+  }
+
+  element.setAttribute("content", content);
+}
+
+function upsertChamberCanonical(href) {
+  let element = document.head.querySelector('link[rel="canonical"]');
+
+  if (!element) {
+    element = document.createElement("link");
+    element.setAttribute("rel", "canonical");
+    document.head.appendChild(element);
+  }
+
+  element.setAttribute("href", href);
+}
+
+function applyChamberProfileSeo(chamber) {
+  const name = String(
+    chamber.name || chamber.short_name || "Barristers’ chambers"
+  ).trim();
+
+  const id = new URLSearchParams(window.location.search).get("id");
+
+  const url = id
+    ? `https://vacatory.com/chamber-profile.html?id=${encodeURIComponent(id)}`
+    : "https://vacatory.com/chamber-profile.html";
+
+  const description =
+    `${name} chambers profile with practice areas, pupillage and mini-pupillage research, student opportunities, locations and official links on Vacatory.`;
+
+  document.title = `${name} | Vacatory`;
+
+  upsertChamberCanonical(url);
+
+  upsertChamberSeoMeta("name", "description", description);
+  upsertChamberSeoMeta("property", "og:type", "website");
+  upsertChamberSeoMeta("property", "og:site_name", "Vacatory");
+  upsertChamberSeoMeta("property", "og:title", `${name} | Vacatory`);
+  upsertChamberSeoMeta("property", "og:description", description);
+  upsertChamberSeoMeta("property", "og:url", url);
+
+  upsertChamberSeoMeta("name", "twitter:card", "summary");
+  upsertChamberSeoMeta("name", "twitter:title", `${name} | Vacatory`);
+  upsertChamberSeoMeta("name", "twitter:description", description);
+}
+
+function renderHeader(chamber) {
+  const name = chamber.name || chamber.short_name || "Barristers’ chambers";
+  document.title = `${name} | Vacatory`;
+applyChamberProfileSeo(chamber);
+
+  const logo = document.getElementById("chambersLogo");
+  const nameElement = document.getElementById("chambersName");
+  const typeElement = document.getElementById("chambersType");
+  const overviewElement = document.getElementById("chambersOverview");
+  const metaElement = document.getElementById("chambersMeta");
+  const heroActions = document.getElementById("heroActions");
+
+  if (logo) {
+    const initial = (chamber.short_name || name).trim().charAt(0).toUpperCase();
+
+    logo.innerHTML = chamber.logo_url
+      ? `
+        <img
+          src="${escapeHtml(chamber.logo_url)}"
+          alt="${escapeHtml(name)} logo"
+        >
+      `
+      : escapeHtml(initial);
+  }
+
+  if (nameElement) {
+    nameElement.textContent = name;
+  }
+
+  if (typeElement) {
+    typeElement.textContent = "Barristers’ chambers";
+  }
+
+  if (overviewElement) {
+    overviewElement.textContent =
+      chamber.overview ||
+      chamber.practice_summary ||
+      "Detailed chambers research is being added.";
+  }
+
+  if (metaElement) {
+    const meta = [];
+    const location = [
+      chamber.head_office_city,
+      chamber.head_office_country
+    ].filter(Boolean).join(", ");
+
+    if (location) {
+      meta.push(metaPill(locationIcon(), location));
+    }
+
+    if (chamber.year_founded) {
+      meta.push(
+        metaPill(circuitIcon(), `Founded ${chamber.year_founded}`)
+      );
+    }
+
+    if (state.locations.length) {
+      meta.push(
+        metaPill(
+          buildingIcon(),
+          `${state.locations.length} location${
+            state.locations.length === 1 ? "" : "s"
+          }`
+        )
+      );
+    }
+
+    if (chamber.pupillage_gateway_member) {
+      meta.push(metaPill(linkIcon(), "Pupillage Gateway member"));
+    }
+
+    metaElement.innerHTML = meta.join("");
+  }
+
+  if (heroActions) {
+    const actions = [];
+
+    if (chamber.website_url) {
+      actions.push(
+        heroAction(chamber.website_url, "Official website", false)
+      );
+    }
+
+    if (chamber.careers_url) {
+      actions.push(
+        heroAction(chamber.careers_url, "Careers", true)
+      );
+    }
+
+    const gatewayUrl =
+      chamber.pupillage_gateway_url ||
+      findLinkUrlByTypes(["application_portal"]);
+
+    if (gatewayUrl) {
+      actions.push(
+        heroAction(gatewayUrl, "Pupillage Gateway", false)
+      );
+    }
+
+    heroActions.innerHTML = deduplicateStrings(actions).join("");
+  }
+}
+
+/* =======================================
+   Overview
+======================================= */
+
+function renderOverview() {
+  const loading = document.getElementById("atGlanceLoading");
+  const panel = document.getElementById("atGlancePanel");
+  const evidence = document.getElementById("atGlanceEvidence");
+  const grid = document.getElementById("atGlanceGrid");
+  const researchGrid = document.getElementById("overviewResearchGrid");
+  const deadlines = document.getElementById("overviewDeadlines");
+
+  if (!state.chamber || !grid || !researchGrid || !deadlines) {
+    return;
+  }
+
+  const chamber = state.chamber;
+  const opportunities = state.opportunities;
+  const futureDated = opportunities
+    .filter(row => isFutureOrToday(getClosingDate(row)))
+    .sort((a, b) => dateValue(getClosingDate(a)) - dateValue(getClosingDate(b)));
+
+  const currentlyOpen = opportunities.filter(isOpportunityOpenNow);
+  const types = uniqueCleanPoints(
+    opportunities.map(row => displayOpportunityType(row))
+  );
+
+  const locationNames = uniqueCleanPoints(
+    state.locations.map(row =>
+      row.location_name || row.city || row.region || row.country
+    )
+  );
+
+  const adjustmentRows = opportunities.filter(row =>
+    hasText(row.disability_support)
+  );
+
+  const cards = [];
+
+  if (futureDated.length) {
+    const next = futureDated[0];
+    cards.push(
+      glanceCard(
+        "Next deadline",
+        formatDate(getClosingDate(next)),
+        next.scheme_name || "Application deadline",
+        "confirmed"
+      )
+    );
+  } else {
+    cards.push(
+      glanceCard(
+        "Next deadline",
+        "No future closing date published",
+        "Check the Opportunities tab for standing routes and dates awaiting publication.",
+        "unpublished"
+      )
+    );
+  }
+
+  cards.push(
+    glanceCard(
+      "Open applications",
+      String(currentlyOpen.length),
+      currentlyOpen.length
+        ? currentlyOpen
+            .slice(0, 2)
+            .map(row => row.scheme_name)
+            .filter(Boolean)
+            .join(" · ")
+        : "No application window is open today.",
+      currentlyOpen.length ? "confirmed" : "unpublished"
+    )
+  );
+
+  cards.push(
+    glanceCard(
+      "Researched routes",
+      String(opportunities.length),
+      types.slice(0, 4).join(" · ") || "No routes published",
+      opportunities.length ? "verified" : "unpublished"
+    )
+  );
+  cards.push(
+    glanceCard(
+      "Locations",
+      String(state.locations.length || 1),
+      locationNames.join(" · ") ||
+        [
+          chamber.head_office_city,
+          chamber.head_office_country
+        ].filter(Boolean).join(", "),
+      "verified"
+    )
+  );
+
+  cards.push(
+    glanceCard(
+      "Practice areas",
+      String(state.practiceAreas.length),
+      state.practiceAreas
+        .filter(area => area.featured)
+        .slice(0, 3)
+        .map(area => area.practice_area)
+        .join(" · ") || "See the full official inventory.",
+      state.practiceAreas.length ? "verified" : "unpublished"
+    )
+  );
+
+  if (chamber.member_count !== null && chamber.member_count !== undefined) {
+    cards.push(
+      glanceCard(
+        "Members",
+        String(chamber.member_count),
+        chamber.pupil_count !== null && chamber.pupil_count !== undefined
+          ? `${chamber.pupil_count} pupil${
+              Number(chamber.pupil_count) === 1 ? "" : "s"
+            } recorded`
+          : "Published member total",
+        "confirmed"
+      )
+    );
+  }
+
+  cards.push(
+    glanceCard(
+      "Adjustments and access",
+      adjustmentRows.length || hasAccessibilityInformation() ? "Published" : "Check directly",
+      adjustmentRows.length
+        ? "Opportunity-specific disability and adjustment information is recorded."
+        : hasAccessibilityInformation()
+          ? "Location or EDI accessibility information is available."
+          : "No specific adjustment wording is stored yet.",
+      adjustmentRows.length || hasAccessibilityInformation()
+        ? "verified"
+        : "unpublished"
+    )
+  );
+
+  grid.innerHTML = cards.join("");
+
+  if (evidence) {
+    const checkedOn =
+      chamber.organisation_research_checked_on ||
+      chamber.research_checked_on;
+
+    const nextReview =
+      chamber.organisation_next_review_on ||
+      chamber.next_review_on;
+
+    evidence.innerHTML = `
+      <span class="evidence-date">
+        <strong>Research checked:</strong>
+        ${escapeHtml(formatDate(checkedOn) || "Date not recorded")}
+      </span>
+
+      <span class="evidence-badge ${
+        normaliseStatusClass(chamber.organisation_research_status)
+      }">
+        ${escapeHtml(
+          formatStatus(
+            chamber.organisation_research_status ||
+            chamber.research_status ||
+            "Research in progress"
+          )
+        )}
+      </span>
+
+      ${
+        nextReview
+          ? `
+            <span class="evidence-date">
+              <strong>Next review:</strong>
+              ${escapeHtml(formatDate(nextReview))}
+            </span>
+          `
+          : ""
+      }
+    `;
+  }
+
+  researchGrid.innerHTML = buildOverviewResearchCards();
+  deadlines.innerHTML = buildDeadlinePreview(futureDated);
+
+  loading?.classList.add("hidden");
+  panel?.classList.remove("hidden");
+}
+
+function buildOverviewResearchCards() {
+  const chamber = state.chamber;
+  const cards = [];
+
+  if (chamber.pupillage_overview) {
+    cards.push(
+      overviewSummaryCard(
+        "Pupillage",
+        chamber.pupillage_overview,
+        "Open the Pupillage & tenancy tab for structure and progression."
+      )
+    );
+  }
+
+  if (chamber.mini_pupillage_overview) {
+    cards.push(
+      overviewSummaryCard(
+        "Mini-pupillage",
+        chamber.mini_pupillage_overview,
+        "Open the Opportunities tab for each route and application window."
+      )
+    );
+  }
+
+  if (chamber.tenancy_overview) {
+    cards.push(
+      overviewSummaryCard(
+        "Tenancy",
+        chamber.tenancy_overview,
+        "Published progression information is kept separate from application details."
+      )
+    );
+  }
+
+  const internationalText = buildInternationalSummary();
+
+  if (internationalText) {
+    cards.push(
+      overviewSummaryCard(
+        "International opportunities",
+        internationalText,
+        "International legal work is not treated as a student opportunity unless a distinct route is officially published."
+      )
+    );
+  }
+
+  return cards.length
+    ? cards.join("")
+    : emptyMessage("Overview research has not yet been added.");
+}
+
+function buildInternationalSummary() {
+  const text = state.opportunities
+    .map(row => row.additional_details)
+    .find(value =>
+      hasText(value) &&
+      /international|overseas|visa/i.test(String(value))
+    );
+
+  if (text) {
+    return text;
+  }
+
+  const hasInternationalLocation = state.locations.some(location =>
+    location.country &&
+    !/united kingdom|england|wales|scotland|northern ireland/i.test(
+      location.country
+    )
+  );
+
+  if (hasInternationalLocation) {
+    return "The chambers has at least one location outside the United Kingdom. Check each opportunity record for any location-specific eligibility.";
+  }
+
+  return "No separate overseas office or dedicated international student recruitment route is recorded in the current official-source audit.";
+}
+
+function buildDeadlinePreview(rows) {
+  if (!rows.length) {
+    return emptyMessage(
+      "No future application closing date is currently published. Standing and closed routes remain available in the Opportunities tab for research."
+    );
+  }
+
+  return rows.slice(0, 5).map(row => `
+    <article class="deadline-preview-card">
+      <div class="deadline-preview-date">
+        ${escapeHtml(formatDate(getClosingDate(row)))}
+      </div>
+
+      <div class="deadline-preview-copy">
+        <h4>${escapeHtml(row.scheme_name || displayOpportunityType(row))}</h4>
+        <p>
+          ${escapeHtml(
+            [row.location, displayOpportunityType(row)]
+              .filter(Boolean)
+              .join(" · ")
+          )}
+        </p>
+      </div>
+
+      <span class="deadline-preview-status">
+        ${escapeHtml(formatStatus(row.status || "Upcoming"))}
+      </span>
+    </article>
+  `).join("");
+}
+
+/* =======================================
+   Opportunities
+======================================= */
+
+/* VACATORY_COUNTRY_TYPE_FILTERS_20260813 */
+
+function publicChamberCountryLabel(value) {
+  const text = String(value || "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!text) {
+    return "";
+  }
+
+  const known = {
+    "uk": "United Kingdom",
+    "u.k.": "United Kingdom",
+    "united_kingdom": "United Kingdom",
+    "united_states": "United States",
+    "uae": "United Arab Emirates",
+    "united_arab_emirates": "United Arab Emirates",
+    "hong_kong": "Hong Kong",
+    "new_zealand": "New Zealand",
+    "south_africa": "South Africa",
+    "republic_of_ireland": "Ireland"
+  };
+
+  const lower = text.toLowerCase();
+
+  if (known[lower]) {
+    return known[lower];
+  }
+
+  if (text.includes("_")) {
+    return text
+      .split("_")
+      .filter(Boolean)
+      .map((word, index) => {
+        const lowerWord = word.toLowerCase();
+
+        if (
+          index > 0 &&
+          ["and", "of", "the"].includes(lowerWord)
+        ) {
+          return lowerWord;
+        }
+
+        return (
+          lowerWord.charAt(0).toUpperCase() +
+          lowerWord.slice(1)
+        );
+      })
+      .join(" ");
+  }
+
+  return text;
+}
+
+
+const chamberCountryCodes=(
+  "AD AE AF AG AI AL AM AO AQ AR AS AT AU AW AX AZ " +
+  "BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BV BW BY BZ " +
+  "CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CW CX CY CZ " +
+  "DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM FO FR " +
+  "GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GS GT GU GW GY " +
+  "HK HM HN HR HT HU ID IE IL IM IN IO IQ IR IS IT JE JM JO JP " +
+  "KE KG KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY " +
+  "MA MC MD ME MF MG MH MK ML MM MN MO MP MQ MR MS MT MU MV MW MX MY MZ " +
+  "NA NC NE NF NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PN PR PS PT PW PY " +
+  "QA RE RO RS RU RW SA SB SC SD SE SG SH SI SJ SK SL SM SN SO SR SS ST SV SX SY SZ " +
+  "TC TD TF TG TH TJ TK TL TM TN TO TR TT TV TW TZ UA UG UM US UY UZ " +
+  "VA VC VE VG VI VN VU WF WS YE YT ZA ZM ZW"
+).split(/\s+/);
+
+function chamberCountryKey(value){
+  return String(value||"")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g,"")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g," ")
+    .replace(/\s+/g," ")
+    .trim();
+}
+
+const chamberCountryLookup=(()=>{
+  const map=new Map();
+
+  if(
+    typeof Intl!=="undefined" &&
+    Intl.DisplayNames
+  ){
+    const names=new Intl.DisplayNames(
+      ["en-GB"],
+      {type:"region"}
+    );
+
+    chamberCountryCodes.forEach(code=>{
+      const name=names.of(code);
+
+      if(name){
+        map.set(
+          chamberCountryKey(name),
+          name
+        );
+      }
+    });
+  }
+
+  const aliases={
+    "uk":"United Kingdom",
+    "u k":"United Kingdom",
+    "great britain":"United Kingdom",
+    "britain":"United Kingdom",
+    "england":"United Kingdom",
+    "wales":"United Kingdom",
+    "scotland":"United Kingdom",
+    "northern ireland":"United Kingdom",
+    "england and wales":"United Kingdom",
+
+    "us":"United States",
+    "u s":"United States",
+    "usa":"United States",
+    "united states of america":"United States",
+
+    "uae":"United Arab Emirates",
+    "u a e":"United Arab Emirates",
+
+    "republic of ireland":"Ireland",
+
+    "the netherlands":"Netherlands",
+
+    "hong kong":"Hong Kong",
+    "hong kong sar":"Hong Kong",
+    "hong kong s a r":"Hong Kong",
+    "hong kong sar china":"Hong Kong",
+
+    "czech republic":"Czechia",
+
+    "south korea":"South Korea",
+    "republic of korea":"South Korea",
+
+    "turkey":"Türkiye"
+  };
+
+  Object.entries(aliases).forEach(
+    ([key,value])=>map.set(key,value)
+  );
+
+  return map;
+})();
+
+function chamberCanonicalCountry(value){
+  return chamberCountryLookup.get(
+    chamberCountryKey(value)
+  )||"";
+}
+
+function chamberOpportunityCountry(row) {
+  for (const value of row?.countries || []) {
+    const country = chamberCanonicalCountry(value);
+
+    if (country) {
+      return country;
+    }
+  }
+
+  const explicit = [
+    row?.country,
+    row?.country_text,
+    row?.country_name,
+    row?.location_country,
+    row?.office_country,
+    row?.jurisdiction
+  ];
+
+  for (const value of explicit) {
+    const country =
+      chamberCanonicalCountry(value);
+
+    if (country) {
+      return country;
+    }
+  }
+
+  const title = String(
+    row?.scheme_name ||
+    row?.opportunity_name ||
+    row?.programme_name ||
+    row?.title ||
+    ""
+  ).trim();
+
+  const match = title.match(
+    /^(.{2,60}?)\s+[-–—]\s+/
+  );
+
+  if (!match) {
+    return "";
+  }
+
+  /*
+   * Title fallback is permitted only when the prefix
+   * validates as a real country.
+   */
+  return chamberCanonicalCountry(
+    match[1]
+  );
+}
+
+
+function chamberResolvedOpportunityCountry(row){
+  const existing=
+    chamberOpportunityCountry(row);
+
+  if(existing)return existing;
+
+  const location=String(
+    row?.location||""
+  ).trim();
+
+  /*
+   * Resolve a city such as London through chambers'
+   * researched location records. The result is still passed
+   * through the country validator, so a city cannot leak into
+   * the Country dropdown.
+   */
+  for(const office of state.locations){
+    const city=String(
+      office.city||
+      office.location_name||
+      office.office_name||
+      ""
+    ).trim();
+
+    const country=
+      chamberCanonicalCountry(
+        office.country||
+        office.country_name||
+        office.jurisdiction
+      );
+
+    if(
+      city&&
+      country&&
+      (
+        chamberCountryKey(location)===
+          chamberCountryKey(city)||
+        (` ${chamberCountryKey(location)} `).includes(
+          ` ${chamberCountryKey(city)} `
+        )
+      )
+    ){
+      return country
+    }
+  }
+
+  const countries=[
+    ...new Set(
+      [
+        ...state.locations.map(office=>
+          chamberCanonicalCountry(
+            office.country||
+            office.country_name||
+            office.jurisdiction
+          )
+        ),
+        chamberCanonicalCountry(
+          state.chamber?.head_office_country
+        )
+      ].filter(Boolean)
+    )
+  ];
+
+  return countries.length===1
+    ?countries[0]
+    :""
+}
+
+function chamberOpportunityCityLabel(e,t){
+  let n=String(e?.location||"")
+    .replace(/\s+/g," ")
+    .trim();
+
+  if(!n)return"";
+
+  if(
+    /^(?:global|international|online|virtual|remote)$/i.test(n)||
+    chamberCountryKey(n)===chamberCountryKey(t)||
+    /\b(?:offices?|countrywide|nationwide|various locations?|multiple locations?|office not specified)\b/i.test(n)
+  ){
+    return"";
+  }
+
+  n=n
+    .replace(/\s+with\b.*$/i,"")
+    .replace(/\bThe Netherlands\b/gi,"Netherlands")
+    .replace(/\bRepublic of Ireland\b/gi,"Ireland")
+    .replace(
+      /\bUnited States of America\b/gi,
+      "United States"
+    )
+    .replace(
+      /\bHong Kong SAR(?:,?\s*China)?\b/gi,
+      "Hong Kong"
+    )
+    .replace(/\bCzech Republic\b/gi,"Czechia")
+    .replace(
+      /\bRepublic of Korea\b/gi,
+      "South Korea"
+    )
+    .replace(/\s+/g," ")
+    .trim();
+
+  return n;
+}
+
+function chamberFilterCityOnly(value) {
+  const parts = String(value || "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .split(",")
+    .map(part => part.trim())
+    .filter(Boolean);
+
+  if (!parts.length) {
+    return "";
+  }
+
+  if (
+    parts.length > 1 &&
+    /^d\.?\s*c\.?$/i.test(parts[1])
+  ) {
+    return `${parts[0]} DC`;
+  }
+
+  return parts[0];
+}
+
+function chamberFilterOfficeRows() {
+  const seen = new Set();
+  const result = [];
+
+  const sourceRows = [
+    ...state.locations,
+    {
+      city: state.chamber?.head_office_city,
+      country: state.chamber?.head_office_country
+    }
+  ];
+
+  sourceRows.forEach(office => {
+    const country =
+      chamberCanonicalCountry(
+        office?.country
+      );
+
+    /*
+     * Only structured city data is used here.
+     */
+    const city =
+      chamberFilterCityOnly(
+        office?.city
+      );
+
+    if (!country || !city) {
+      return;
+    }
+
+    const key =
+      `${chamberCountryKey(country)}|` +
+      `${chamberCountryKey(city)}`;
+
+    if (seen.has(key)) {
+      return;
+    }
+
+    seen.add(key);
+
+    result.push({
+      country,
+      city
+    });
+  });
+
+  return result;
+}
+
+function chamberFilterLocationLabel(
+  country,
+  city
+) {
+  if (!country || !city) {
+    return "";
+  }
+
+  if (
+    chamberCountryKey(country) ===
+    chamberCountryKey(city)
+  ) {
+    return country;
+  }
+
+  return `${country}, ${city}`;
+}
+
+function chamberLocationTextContainsCity(
+  locationText,
+  city
+) {
+  const haystack =
+    ` ${chamberCountryKey(locationText)} `;
+
+  const needle =
+    ` ${chamberCountryKey(city)} `;
+
+  return Boolean(
+    needle.trim() &&
+    haystack.includes(needle)
+  );
+}
+
+function chamberLooksLikeNonCity(value) {
+  return /(?:\d|\b(?:building|tower|street|road|avenue|boulevard|square|wharf|district|quarter|campus|office|centre|center|quay|harbour|harbor|docklands|business park|industrial park|manhattan|zuidas|canary wharf|city of london|la défense|la defense)\b)/i
+    .test(String(value || ""));
+}
+
+function chamberOpportunityFilterLocations(row) {
+  const structuredCountries = (row?.countries || [])
+    .map(chamberCanonicalCountry)
+    .filter(Boolean);
+  const structuredCities = (row?.cities || [])
+    .map(value => String(value || "").trim())
+    .filter(Boolean);
+
+  if (structuredCountries.length || structuredCities.length) {
+    const countries = structuredCountries.length
+      ? structuredCountries
+      : [""];
+    const labels = countries.flatMap(country =>
+      structuredCities.length
+        ? structuredCities.map(city =>
+            chamberFilterLocationLabel(country, city)
+          )
+        : [chamberFilterLocationLabel(country, "")]
+    );
+
+    return uniqueCleanPoints(labels.filter(Boolean));
+  }
+
+  const country =
+    chamberResolvedOpportunityCountry(row);
+
+  const rawLocation =
+    String(row?.location || "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+  const offices =
+    chamberFilterOfficeRows();
+
+  const eligibleOffices =
+    country
+      ? offices.filter(
+          office =>
+            office.country === country
+        )
+      : offices;
+
+  const matched =
+    eligibleOffices.filter(
+      office =>
+        chamberLocationTextContainsCity(
+          rawLocation,
+          office.city
+        )
+    );
+
+  if (matched.length) {
+    return [
+      ...new Set(
+        matched
+          .map(office =>
+            chamberFilterLocationLabel(
+              office.country,
+              office.city
+            )
+          )
+          .filter(Boolean)
+      )
+    ];
+  }
+
+  const fallbackText =
+    chamberOpportunityCityLabel(
+      row,
+      country
+    );
+
+  const candidates =
+    String(fallbackText || "")
+      .split(",")
+      .map(part => part.trim())
+      .filter(Boolean)
+      .filter(
+        part =>
+          !country ||
+          chamberCountryKey(part) !==
+            chamberCountryKey(country)
+      );
+
+  let city =
+    candidates.find(
+      candidate =>
+        !chamberLooksLikeNonCity(candidate)
+    ) || "";
+
+  city =
+    chamberFilterCityOnly(city);
+
+  const label =
+    chamberFilterLocationLabel(
+      country,
+      city
+    );
+
+  return label
+    ? [label]
+    : [];
+}
+
+function chamberEscapeOpportunityGeo(value){
+  return String(value||"")
+    .replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+}
+
+function chamberOpportunityCoreName(
+  row,
+  country,
+  city
+){
+  let name=String(
+    row?.scheme_name||
+    row?.opportunity_name||
+    row?.programme_name||
+    row?.title||
+    displayOpportunityType(row)||
+    "Opportunity"
+  )
+    .replace(/[–—]/g," - ")
+    .replace(/\s+/g," ")
+    .trim();
+
+  const terms=[
+    country,
+    city,
+    ...(country==="United Kingdom"
+      ?[
+        "United Kingdom",
+        "UK",
+        "England",
+        "Wales",
+        "Scotland",
+        "Northern Ireland",
+        "England and Wales"
+      ]
+      :[])
+  ].filter(Boolean);
+
+  let pieces=name
+    .split(/\s+-\s+/)
+    .map(piece=>piece.trim())
+    .filter(Boolean);
+
+  pieces=pieces.filter(piece=>
+    !terms.some(term=>
+      chamberCountryKey(piece)===
+        chamberCountryKey(term)
+    )
+  );
+
+  name=pieces.join(" - ").trim();
+
+  [...terms]
+    .sort((a,b)=>b.length-a.length)
+    .forEach(term=>{
+      const escaped=
+        chamberEscapeOpportunityGeo(term);
+
+      name=name
+        .replace(
+          new RegExp(
+            `^${escaped}\\s*(?:[-:]\\s*)?`,
+            "i"
+          ),
+          ""
+        )
+        .replace(
+          new RegExp(
+            `\\s*(?:[-:]\\s*)?${escaped}$`,
+            "i"
+          ),
+          ""
+        )
+        .trim();
+    });
+
+  return name||
+    displayOpportunityType(row)||
+    "Opportunity";
+}
+
+function chamberPublicOpportunityTitle(row){
+  if(row?.public_title){
+    return String(row.public_title).trim();
+  }
+
+  const country=
+    chamberResolvedOpportunityCountry(row);
+
+  const city=
+    chamberOpportunityCityLabel(
+      row,
+      country
+    );
+
+  const opportunity=
+    chamberOpportunityCoreName(
+      row,
+      country,
+      city
+    );
+
+  const parts=[];
+
+  if(country){
+    parts.push(country);
+  }
+
+  if(
+    city&&
+    chamberCountryKey(city)!==
+      chamberCountryKey(country)
+  ){
+    parts.push(city);
+  }
+
+  parts.push(opportunity);
+
+  return parts
+    .filter(Boolean)
+    .filter(
+      (part,index,array)=>
+        array.findIndex(other=>
+          chamberCountryKey(other)===
+            chamberCountryKey(part)
+        )===index
+    )
+    .join(" - ");
+}
+
+function renderOpportunityFilters() {
+  const container = document.getElementById(
+    "opportunityFilters"
+  );
+
+  if (!container) {
+    return;
+  }
+
+  if (!state.opportunities.length) {
+    container.innerHTML = "";
+    return;
+  }
+
+  const countries = uniqueCleanPoints(
+    state.opportunities
+      .flatMap(chamberOpportunityFilterLocations)
+      .filter(Boolean)
+  ).sort((a, b) =>
+    a.localeCompare(b, "en-GB")
+  );
+
+  const types = uniqueCleanPoints(
+    state.opportunities
+      .map(row => displayOpportunityType(row))
+      .filter(Boolean)
+  ).sort((a, b) =>
+    a.localeCompare(b, "en-GB")
+  );
+
+  container.innerHTML = `
+    <div
+      class="chamber-opportunity-filter-panel"
+      aria-label="Filter opportunities"
+    >
+      <div class="chamber-opportunity-filter-grid">
+
+        <div class="chamber-opportunity-filter-control">
+          <label for="chamberOpportunityLocationFilter">
+            Location
+          </label>
+
+          <select id="chamberOpportunityLocationFilter">
+            <option value="">All locations</option>
+
+            ${countries.map(country => `
+              <option
+                value="${escapeHtml(country)}"
+                ${
+                  country === state.opportunityLocationFilter
+                    ? "selected"
+                    : ""
+                }
+              >
+                ${escapeHtml(country)}
+              </option>
+            `).join("")}
+          </select>
+        </div>
+
+        <div class="chamber-opportunity-filter-control">
+          <label for="chamberOpportunityTypeFilter">
+            Type
+          </label>
+
+          <select id="chamberOpportunityTypeFilter">
+            <option value="">All types</option>
+
+            ${types.map(type => `
+              <option
+                value="${escapeHtml(type)}"
+                ${
+                  type === state.opportunityTypeFilter
+                    ? "selected"
+                    : ""
+                }
+              >
+                ${escapeHtml(type)}
+              </option>
+            `).join("")}
+          </select>
+        </div>
+
+        <button
+          id="chamberOpportunityFilterReset"
+          class="secondary-btn chamber-opportunity-filter-reset"
+          type="button"
+          ${
+            state.opportunityLocationFilter ||
+            state.opportunityTypeFilter
+              ? ""
+              : "hidden"
+          }
+        >
+          Reset
+        </button>
+
+      </div>
+    </div>
+  `;
+
+  const countrySelect =
+    document.getElementById(
+      "chamberOpportunityLocationFilter"
+    );
+
+  const typeSelect =
+    document.getElementById(
+      "chamberOpportunityTypeFilter"
+    );
+
+  const reset =
+    document.getElementById(
+      "chamberOpportunityFilterReset"
+    );
+
+  countrySelect?.addEventListener(
+    "change",
+    () => {
+      state.opportunityLocationFilter =
+        countrySelect.value;
+
+      renderOpportunityFilters();
+      renderOpportunities();
+    }
+  );
+
+  typeSelect?.addEventListener(
+    "change",
+    () => {
+      state.opportunityTypeFilter =
+        typeSelect.value;
+
+      renderOpportunityFilters();
+      renderOpportunities();
+    }
+  );
+
+  reset?.addEventListener(
+    "click",
+    () => {
+      state.opportunityLocationFilter = "";
+      state.opportunityTypeFilter = "";
+
+      renderOpportunityFilters();
+      renderOpportunities();
+
+      document.getElementById(
+        "chamberOpportunityLocationFilter"
+      )?.focus();
+    }
+  );
+}function renderOpportunities() {
+  const list = document.getElementById("opportunitiesList");
+  const loading = document.getElementById("opportunitiesLoading");
+  const empty = document.getElementById("opportunitiesEmpty");
+
+  if (!list) {
+    return;
+  }
+
+  const rows = state.opportunities
+    .filter(row => {
+      if (
+        state.opportunityLocationFilter&&!chamberOpportunityFilterLocations(row).includes(state.opportunityLocationFilter)
+      ) {
+        return false;
+      }
+
+      if (
+        state.opportunityTypeFilter &&
+        displayOpportunityType(row) !==
+          state.opportunityTypeFilter
+      ) {
+        return false;
+      }
+
+      return true;
+    })
+    .sort(sortOpportunityRows);
+
+  loading?.classList.add("hidden");
+
+  if (!rows.length) {
+    list.innerHTML = "";
+
+    if (empty) {
+      empty.textContent =
+        state.opportunityLocationFilter ||
+        state.opportunityTypeFilter
+          ? "No opportunities match these filters."
+          : "No opportunities have been added for this chambers yet.";
+
+      empty.classList.remove("hidden");
+    }
+
+    return;
+  }
+
+  empty?.classList.add("hidden");
+
+  list.innerHTML = rows
+    .map(row =>
+      renderOpportunityCard({
+        ...row,
+        scheme_name:
+          chamberPublicOpportunityTitle(row)
+      })
+    )
+    .join("");
+}function renderOpportunityCard(row) {
+  const closingDate = getClosingDate(row);
+  const deadlineLabel = closingDate
+    ? formatDate(closingDate)
+    : "Not published";
+
+  const summary =
+    row.card_summary ||
+    row.student_summary ||
+    row.status_note ||
+    "";
+
+  const facts = [
+    opportunityFact("Applications open", formatDate(getOpeningDate(row))),
+    opportunityFact("Closing date", formatDate(closingDate)),
+    opportunityFact("Programme dates", getProgrammeDates(row)),
+    opportunityFact("Duration", row.duration),
+    opportunityFact("Location", row.location),
+    opportunityFact("Delivery", formatStatus(row.delivery_mode)),
+    opportunityFact("Award or payment", row.pay_details || row.salary),
+    opportunityFact("Status", formatStatus(row.status)),
+    opportunityFact("Cycle", row.cycle_year ? String(row.cycle_year) : "")
+  ].filter(Boolean).join("");
+
+  const detailSections = [
+    detailSection("Who can apply", [
+      row.eligibility,
+      row.year_of_study_requirements,
+      row.degree_requirements,
+      row.academic_requirements
+    ]),
+
+    detailSection("Application process", [
+      row.application_process,
+      row.application_link
+        ? "An official application or opportunity link is provided below."
+        : ""
+    ]),
+
+    detailSection("Assessments and interviews", [
+      row.assessment_formats,
+      row.assessments,
+      row.interview_dates
+    ]),
+
+    detailSection("Programme structure", [
+      row.programme_structure,
+      row.programme_dates_text,
+      row.programme_dates
+    ]),
+
+    detailSection("Progression", [
+      row.progression_route,
+      row.training_contract_route &&
+      row.training_contract_route !== "not_applicable"
+        ? formatStatus(row.training_contract_route)
+        : ""
+    ]),
+
+    detailSection("Funding, expenses and support", [
+      row.pay_details,
+      row.salary,
+      row.expenses,
+      row.sponsorship
+    ]),
+
+    detailSection("Right to work and visa information", [
+      row.right_to_work_requirements,
+      row.visa_requirements,
+      row.visa_information
+    ]),
+
+    detailSection("Disability support and adjustments", [
+      row.disability_support
+    ]),
+
+    detailSection("Further official information", [
+      row.additional_details,
+      row.status_note
+    ])
+  ].filter(Boolean).join("");
+
+  const officialUrl =
+    row.application_link ||
+    row.source_url ||
+    state.chamber.careers_url ||
+    state.chamber.website_url;
+
+  return `
+    <details class="opportunity-item">
+      <summary class="opportunity-summary">
+        <div class="opportunity-deadline ${
+          closingDate ? "" : "muted"
+        }">
+          <span>Closing</span>
+          <strong>${escapeHtml(deadlineLabel)}</strong>
+        </div>
+
+        <div class="opportunity-summary-main">
+          <h3>${escapeHtml(
+            row.scheme_name || displayOpportunityType(row)
+          )}</h3>
+
+          ${
+            summary
+              ? `<p class="opportunity-card-summary">${escapeHtml(summary)}</p>`
+              : ""
+          }
+
+          <div class="opportunity-summary-meta">
+            <span>
+              <strong>Type:</strong>
+              ${escapeHtml(displayOpportunityType(row))}
+            </span>
+
+            ${
+              row.location
+                ? `
+                  <span>
+                    <strong>Location:</strong>
+                    ${escapeHtml(row.location)}
+                  </span>
+                `
+                : ""
+            }
+
+            ${
+              getProgrammeDates(row)
+                ? `
+                  <span>
+                    <strong>Programme:</strong>
+                    ${escapeHtml(getProgrammeDates(row))}
+                  </span>
+                `
+                : ""
+            }
+          </div>
+
+          ${
+            row.status
+              ? `
+                <span class="opportunity-status-pill">
+                  ${escapeHtml(formatStatus(row.status))}
+                </span>
+              `
+              : ""
+          }
+        </div>
+
+        <span class="opportunity-chevron" aria-hidden="true">
+          ${chevronIcon()}
+        </span>
+      </summary>
+
+      <div class="opportunity-expanded">
+        ${
+          facts
+            ? `<div class="opportunity-facts">${facts}</div>`
+            : ""
+        }
+
+        ${
+          detailSections
+            ? `
+              <div class="opportunity-detail-sections">
+                ${detailSections}
+              </div>
+            `
+            : `
+              <p class="opportunity-no-details">
+                Further details have not yet been published.
+              </p>
+            `
+        }
+
+        ${
+          officialUrl
+            ? `
+              <div class="opportunity-link-panel">
+                ${profileLink(
+                  officialUrl,
+                  row.application_link
+                    ? "Open official application or opportunity page"
+                    : "Open official source",
+                  `Official opportunity page — ${row.scheme_name || displayOpportunityType(row)}`
+                )}
+              </div>
+            `
+            : ""
+        }
+      </div>
+    </details>
+  `;
+}
+
+function sortOpportunityRows(first, second) {
+  const firstDate = getClosingDate(first);
+  const secondDate = getClosingDate(second);
+  const firstGroup = dateSortGroup(firstDate);
+  const secondGroup = dateSortGroup(secondDate);
+
+  if (firstGroup !== secondGroup) {
+    return firstGroup - secondGroup;
+  }
+
+  const firstValue = dateValue(firstDate);
+  const secondValue = dateValue(secondDate);
+
+  if (firstGroup === 2) {
+    return secondValue - firstValue;
+  }
+
+  if (firstValue !== secondValue) {
+    return firstValue - secondValue;
+  }
+
+  return String(first.scheme_name || "").localeCompare(
+    String(second.scheme_name || "")
+  );
+}
+
+function opportunityFilterGroup(row) {
+  const type = displayOpportunityType(row).toLowerCase();
+
+  if (type.includes("pupillage") && !type.includes("mini")) {
+    return "Pupillage";
+  }
+
+  if (type.includes("mini-pupillage")) {
+    return "Mini-pupillage";
+  }
+
+  if (
+    type.includes("tenancy") ||
+    type.includes("third-six") ||
+    type.includes("third six")
+  ) {
+    return "Post-pupillage";
+  }
+
+  if (
+    type.includes("school") ||
+    type.includes("outreach") ||
+    type.includes("work experience")
+  ) {
+    return "Access and experience";
+  }
+
+  return "Other routes";
+}
+
+/* =======================================
+   Practice areas
+======================================= */
+
+function renderPracticeAreas() {
+  const container = document.getElementById("practiceAreasList");
+
+  if (!container) {
+    return;
+  }
+
+  if (!state.practiceAreas.length) {
+    container.innerHTML = emptyMessage(
+      "No official practice-area inventory has been added yet."
+    );
+    return;
+  }
+
+  const grouped = new Map();
+
+  state.practiceAreas.forEach(area => {
+    const group = inferPracticeAreaGroup(area);
+
+    if (!grouped.has(group)) {
+      grouped.set(group, []);
+    }
+
+    grouped.get(group).push(area);
+  });
+
+  container.innerHTML = Array.from(grouped.entries())
+    .map(([group, rows], index) => `
+      <details class="practice-area-group" ${index === 0 ? "open" : ""}>
+        <summary class="practice-group-summary">
+          <div class="practice-group-copy">
+            <span class="practice-group-label">Official inventory</span>
+            <h3>${escapeHtml(group)}</h3>
+            <p>
+              ${escapeHtml(
+                `${rows.length} practice area${rows.length === 1 ? "" : "s"}`
+              )}
+            </p>
+          </div>
+
+          <span class="practice-group-action" aria-hidden="true"></span>
+        </summary>
+
+        <div class="practice-group-expanded">
+          ${rows.map(area => `
+            <article class="practice-area-card">
+              <div class="practice-area-title-row">
+                <h4>${escapeHtml(area.practice_area)}</h4>
+                ${
+                  area.featured
+                    ? `<span class="featured-tag">Featured</span>`
+                    : ""
+                }
+              </div>
+
+              ${
+                area.student_summary || area.description
+                  ? `
+                    <p>
+                      ${escapeHtml(
+                        area.student_summary || area.description
+                      )}
+                    </p>
+                  `
+                  : ""
+              }
+
+              ${
+                area.source_url
+                  ? `
+                    <div class="research-source-row">
+                      ${profileLink(area.source_url, "Official practice-area source", `Official practice-area source — ${area.practice_area}`)}
+                    </div>
+                  `
+                  : ""
+              }
+            </article>
+          `).join("")}
+        </div>
+      </details>
+    `)
+    .join("");
+}
+
+function inferPracticeAreaGroup(area) {
+  const source = `${area.source_title || ""} ${area.source_url || ""}`.toLowerCase();
+
+  if (source.includes("brighton")) {
+    return "Brighton";
+  }
+
+  if (source.includes("london")) {
+    return "London";
+  }
+
+  return "Chambers-wide";
+}
+
+/* =======================================
+   Locations
+======================================= */
+
+function renderLocations() {
+  const container = document.getElementById("locationsList");
+
+  if (!container) {
+    return;
+  }
+
+  const rows = [...state.locations];
+
+  if (!rows.length && state.chamber.head_office_city) {
+    rows.push({
+      location_name: state.chamber.head_office_city,
+      city: state.chamber.head_office_city,
+      country: state.chamber.head_office_country
+    });
+  }
+
+  if (!rows.length) {
+    container.innerHTML = emptyMessage(
+      "No chambers locations have been added yet."
+    );
+    return;
+  }
+
+  container.innerHTML = rows.map(location => {
+    const name =
+      location.location_name ||
+      location.city ||
+      "Chambers";
+
+    const publicCountry =
+      chamberCanonicalCountry(
+        location.country
+      ) ||
+      String(location.country || "").trim();
+
+    const address =
+      location.full_address ||
+      location.address ||
+      location.office_address ||
+      "";
+
+    const phone =
+      location.telephone ||
+      location.phone ||
+      "";
+
+    const recruitment =
+      location.offers_student_recruitment ??
+      location.student_recruitment;
+
+    return `
+      <article class="location-card">
+        <div class="location-card-header">
+          <div>
+            <h3>${escapeHtml(name)}</h3>
+
+            ${
+              location.region || publicCountry
+                ? `
+                  <p class="location-card-subtitle">
+                    ${escapeHtml(
+                      [location.region, publicCountry]
+                        .filter(Boolean)
+                        .join(" · ")
+                    )}
+                  </p>
+                `
+                : ""
+            }
+          </div>
+
+          ${
+            location.location_category
+              ? `
+                <span class="status-pill">
+                  ${escapeHtml(location.location_category)}
+                </span>
+              `
+              : ""
+          }
+        </div>
+
+        ${
+          address
+            ? `<p class="location-address">${escapeHtml(address)}</p>`
+            : ""
+        }
+
+        ${
+          phone
+            ? `<p class="location-contact">${escapeHtml(phone)}</p>`
+            : ""
+        }
+
+        <div class="location-tags">
+          ${
+            recruitment === true
+              ? `<span class="status-pill">Student recruitment</span>`
+              : ""
+          }
+
+          ${
+            location.is_physical_location === true
+              ? `<span class="status-pill">Physical chambers</span>`
+              : ""
+          }
+        </div>
+
+        ${
+          location.student_recruitment_note
+            ? `
+              <p class="location-note">
+                ${escapeHtml(location.student_recruitment_note)}
+              </p>
+            `
+            : ""
+        }
+
+        <div class="location-actions">
+          ${
+            location.office_url
+              ? profileLink(location.office_url, "Official location page", `Official location page — ${name}${publicCountry ? `, ${publicCountry}` : ""}`)
+              : ""
+          }
+
+          ${
+            location.careers_url
+              ? profileLink(location.careers_url, "Location careers", `Location careers — ${name}${publicCountry ? `, ${publicCountry}` : ""}`)
+              : ""
+          }
+
+          ${
+            location.source_url &&
+            location.source_url !== location.office_url
+              ? profileLink(location.source_url, "Official source", `Official source — ${name}${publicCountry ? `, ${publicCountry}` : ""}`)
+              : ""
+          }
+        </div>
+      </article>
+    `;
+  }).join("");
+}
+
+/* =======================================
+   Pupillage and tenancy
+======================================= */
+
+function renderPupillageAndTenancy() {
+  const container = document.getElementById("pupillageTenancyList");
+
+  if (!container) {
+    return;
+  }
+
+  const chamber = state.chamber;
+  const pupilRows = state.opportunities.filter(row =>
+    /pupillage/i.test(displayOpportunityType(row))
+  );
+
+  const items = [];
+
+  if (chamber.pupillage_overview) {
+    items.push(
+      researchItem(
+        "Pupillage",
+        "Pupillage structure",
+        shortSummary(chamber.pupillage_overview),
+        [
+          researchTextSection("Published overview", chamber.pupillage_overview),
+          researchTextSection(
+            "Current researched routes",
+            pupilRows
+              .filter(row => !/mini/i.test(displayOpportunityType(row)))
+              .map(row => row.scheme_name)
+              .filter(Boolean)
+              .join(" · ")
+          )
+        ],
+        chamber.careers_url
+      )
+    );
+  }
+
+  if (chamber.mini_pupillage_overview) {
+    items.push(
+      researchItem(
+        "Mini-pupillage",
+        "Mini-pupillage structure",
+        shortSummary(chamber.mini_pupillage_overview),
+        [
+          researchTextSection(
+            "Published overview",
+            chamber.mini_pupillage_overview
+          ),
+          researchTextSection(
+            "Current researched routes",
+            pupilRows
+              .filter(row => /mini/i.test(displayOpportunityType(row)))
+              .map(row => row.scheme_name)
+              .filter(Boolean)
+              .join(" · ")
+          )
+        ],
+        findLinkUrlByTypes([
+          "mini_pupillage",
+          "assessed_mini_pupillage"
+        ])
+      )
+    );
+  }
+
+  if (chamber.tenancy_overview) {
+    items.push(
+      researchItem(
+        "Progression",
+        "Tenancy",
+        shortSummary(chamber.tenancy_overview),
+        [
+          researchTextSection("Published overview", chamber.tenancy_overview),
+          researchTextSection(
+            "Opportunity-specific progression",
+            uniqueCleanPoints(
+              state.opportunities
+                .map(row => row.progression_route)
+                .filter(Boolean)
+            ).join(" · ")
+          )
+        ],
+        findLinkUrlByTypes(["pupillage"])
+      )
+    );
+  }
+
+  const assessmentText = uniqueCleanPoints(
+    state.opportunities.flatMap(row => [
+      row.assessment_formats,
+      row.assessments,
+      row.interview_dates
+    ]).filter(Boolean)
+  ).join(" · ");
+
+  if (assessmentText) {
+    items.push(
+      researchItem(
+        "Selection",
+        "Assessments and interviews",
+        shortSummary(assessmentText),
+        [
+          researchTextSection(
+            "Published assessment information",
+            assessmentText
+          )
+        ],
+        findLinkUrlByTypes(["application_portal", "pupillage"])
+      )
+    );
+  }
+
+  if (chamber.pupillage_gateway_member || chamber.pupillage_gateway_url) {
+    items.push(
+      researchItem(
+        "Applications",
+        "Pupillage Gateway",
+        "This chambers uses or is recorded as a member of the Pupillage Gateway.",
+        [
+          researchFacts([
+            ["Gateway member", chamber.pupillage_gateway_member ? "Yes" : "Not confirmed"],
+            ["Application route", "Check each cycle-specific opportunity record"]
+          ])
+        ],
+        chamber.pupillage_gateway_url
+      )
+    );
+  }
+
+  container.innerHTML = items.length
+    ? items.join("")
+    : emptyMessage(
+        "Pupillage and tenancy information has not yet been added."
+      );
+}
+
+/* =======================================
+   Funding
+======================================= */
+
+function renderFunding() {
+  const container = document.getElementById("fundingList");
+
+  if (!container) {
+    return;
+  }
+
+  const cards = [];
+  const seen = new Set();
+
+  state.opportunities.forEach(row => {
+    const value = row.pay_details || row.salary;
+    const support = uniqueCleanPoints([
+      row.expenses,
+      row.sponsorship
+    ]).join(" · ");
+
+    if (!hasText(value) && !hasText(support)) {
+      return;
+    }
+
+    const key = normaliseText(
+      `${row.scheme_name}|${value}|${support}`
+    );
+
+    if (seen.has(key)) {
+      return;
+    }
+
+    seen.add(key);
+
+    cards.push(`
+      <article class="funding-card">
+        <h3>${escapeHtml(
+          row.scheme_name || displayOpportunityType(row)
+        )}</h3>
+
+        ${
+          value
+            ? `<p class="funding-value">${escapeHtml(value)}</p>`
+            : ""
+        }
+
+        ${
+          support
+            ? `<p>${escapeHtml(support)}</p>`
+            : ""
+        }
+
+        ${
+          row.source_url || row.application_link
+            ? `
+              <div class="research-source-row">
+                ${profileLink(
+                  row.application_link || row.source_url,
+                  "Official funding source",
+                  `Official funding source — ${row.scheme_name || displayOpportunityType(row)}`
+                )}
+              </div>
+            `
+            : ""
+        }
+      </article>
+    `);
+  });
+
+  container.innerHTML = cards.length
+    ? cards.join("")
+    : emptyMessage(
+        "No pupillage award, bursary, reimbursement or expenses information is currently stored."
+      );
+}
+
+/* =======================================
+   EDI
+======================================= */
+
+function renderEdi() {
+  const container = document.getElementById("ediList");
+
+  if (!container) {
+    return;
+  }
+
+  const items = [];
+
+  const adjustmentInformation = uniqueCleanPoints(
+    state.opportunities
+      .map(row => row.disability_support)
+      .filter(Boolean)
+  );
+
+  if (adjustmentInformation.length) {
+    items.push(
+      researchItem(
+        "Disability and access",
+        "Applicant adjustments",
+        shortSummary(adjustmentInformation.join(" · ")),
+        [
+          researchTextSection(
+            "Published support",
+            adjustmentInformation.join(" · ")
+          )
+        ],
+        findLinkUrlByTypes(["edi", "contact"])
+      )
+    );
+  }
+
+  const locationAccess = state.locations
+    .filter(location =>
+      hasText(location.student_recruitment_note) &&
+      /access|wheelchair|step-free|adjustment|facilit/i.test(
+        location.student_recruitment_note
+      )
+    )
+    .map(location => ({
+      name: location.location_name || location.city || "Location",
+      note: location.student_recruitment_note,
+      url: location.source_url || location.office_url
+    }));
+
+  if (locationAccess.length) {
+    items.push(
+      researchItem(
+        "Physical access",
+        "Chambers accessibility",
+        locationAccess
+          .map(item => `${item.name}: ${item.note}`)
+          .join(" "),
+        locationAccess.map(item =>
+          researchTextSection(item.name, item.note)
+        ),
+        locationAccess[0].url
+      )
+    );
+  }
+
+  const positiveAction = state.opportunities.filter(row =>
+    /assessed mini|positive|socio-economic|social mobility|less advantaged|outreach/i.test(
+      [
+        row.scheme_name,
+        row.eligibility,
+        row.additional_details,
+        row.student_summary
+      ].filter(Boolean).join(" ")
+    )
+  );
+
+  if (positiveAction.length) {
+    items.push(
+      researchItem(
+        "Positive action",
+        "Access and social mobility programmes",
+        positiveAction
+          .map(row => row.scheme_name)
+          .filter(Boolean)
+          .join(" · "),
+        positiveAction.map(row =>
+          researchTextSection(
+            row.scheme_name || "Programme",
+            uniqueCleanPoints([
+              row.eligibility,
+              row.pay_details,
+              row.expenses,
+              row.progression_route
+            ]).join(" · ")
+          )
+        ),
+        positiveAction[0].application_link ||
+          positiveAction[0].source_url
+      )
+    );
+  }
+
+  const ediLinks = state.links.filter(link =>
+    ["edi", "contact"].includes(String(link.link_type || "").toLowerCase())
+  );
+
+  if (ediLinks.length) {
+    items.push(
+      researchItem(
+        "Policies and contacts",
+        "Official EDI and accessibility pages",
+        ediLinks.map(link => link.label).filter(Boolean).join(" · "),
+        [
+          researchTextSection(
+            "Official pages",
+            ediLinks.map(link => link.label).filter(Boolean).join(" · ")
+          )
+        ],
+        ediLinks[0].url
+      )
+    );
+  }
+
+  container.innerHTML = items.length
+    ? items.join("")
+    : emptyMessage(
+        "No specific EDI, disability-access or adjustment information is currently stored."
+      );
+}
+
+/* =======================================
+   Highlights
+======================================= */
+
+function renderHighlights() {
+  const container = document.getElementById("highlightsList");
+
+  if (!container) {
+    return;
+  }
+
+  const items = [];
+
+  if (state.rankings.length) {
+    const rankingSections = state.rankings.map(ranking =>
+      researchTextSection(
+        [
+          ranking.ranking_band,
+          ranking.ranking_name
+        ].filter(Boolean).join(" — "),
+        [
+          ranking.practice_area,
+          ranking.circuit_or_region,
+          ranking.ranking_source,
+          ranking.ranking_year
+        ].filter(Boolean).join(" · ")
+      )
+    );
+
+    items.push(
+      researchItem(
+        "Independent recognition",
+        "Current rankings",
+        state.rankings
+          .map(ranking =>
+            [
+              ranking.ranking_band,
+              ranking.ranking_name
+            ].filter(Boolean).join(" in ")
+          )
+          .join(" · "),
+        rankingSections,
+        state.rankings[0].source_url
+      )
+    );
+  }
+
+  if (state.chamber.year_founded) {
+    items.push(
+      researchItem(
+        "History",
+        "Founded",
+        `The chambers records ${state.chamber.year_founded} as its founding year.`,
+        [
+          researchFacts([
+            ["Founded", String(state.chamber.year_founded)],
+            ["Head office", state.chamber.head_office_city]
+          ])
+        ],
+        state.chamber.website_url
+      )
+    );
+  }
+
+  if (state.locations.length) {
+    items.push(
+      researchItem(
+        "Structure",
+        "Locations and recruitment",
+        `${state.locations.length} researched location${
+          state.locations.length === 1 ? "" : "s"
+        }: ${state.locations
+          .map(location => location.location_name || location.city)
+          .filter(Boolean)
+          .join(" · ")}.`,
+        state.locations.map(location =>
+          researchTextSection(
+            location.location_name || location.city || "Location",
+            uniqueCleanPoints([
+              location.student_recruitment_note,
+              location.offers_student_recruitment === true
+                ? "Student recruitment is recorded for this location."
+                : ""
+            ]).join(" ")
+          )
+        ),
+        state.locations[0].office_url || state.locations[0].source_url
+      )
+    );
+  }
+
+  if (state.practiceAreas.length) {
+    items.push(
+      researchItem(
+        "Practice breadth",
+        "Official practice-area inventory",
+        `${state.practiceAreas.length} practice area${
+          state.practiceAreas.length === 1 ? "" : "s"
+        } are recorded from official chambers sources.`,
+        [
+          researchTextSection(
+            "Featured areas",
+            state.practiceAreas
+              .filter(area => area.featured)
+              .map(area => area.practice_area)
+              .join(" · ")
+          )
+        ],
+        state.practiceAreas[0].source_url
+      )
+    );
+  }
+
+  items.push(
+    researchItem(
+      "Research audit",
+      "Vacatory research status",
+      `Profile status: ${formatStatus(
+        state.chamber.profile_status
+      )}. Research status: ${formatStatus(
+        state.chamber.organisation_research_status ||
+        state.chamber.research_status
+      )}.`,
+      [
+        researchFacts([
+          [
+            "Research checked",
+            formatDate(
+              state.chamber.organisation_research_checked_on ||
+              state.chamber.research_checked_on
+            )
+          ],
+          [
+            "Next review",
+            formatDate(
+              state.chamber.organisation_next_review_on ||
+              state.chamber.next_review_on
+            )
+          ],
+          ["Opportunities", String(state.opportunities.length)],
+          ["Official links", String(state.links.length)]
+        ])
+      ],
+      ""
+    )
+  );
+
+  container.innerHTML = items.join("");
+}
+
+/* =======================================
+   Links & Socials
+======================================= */
+
+function renderLinksAndSocials() {
+  const container = document.getElementById("linksSocialsList");
+
+  if (!container) {
+    return;
+  }
+
+  const links = [
+    {
+      link_type: "main_website",
+      label: "Official chambers website",
+      url: state.chamber.website_url,
+      audience: "All visitors",
+      display_order: 0,
+      is_primary: true
+    },
+    {
+      link_type: "careers",
+      label: "Official careers information",
+      url: state.chamber.careers_url,
+      audience: "Students and applicants",
+      display_order: 5,
+      is_primary: true
+    },
+    {
+      link_type: "application_portal",
+      label: "Pupillage Gateway",
+      url: state.chamber.pupillage_gateway_url,
+      audience: "Pupillage applicants",
+      display_order: 8,
+      is_primary: true
+    },
+    ...state.links
+  ].filter(link => hasText(link.url));
+
+  const uniqueLinks = deduplicateObjects(
+    links,
+    link => normaliseText(link.url)
+  ).sort((a, b) =>
+    Number(a.display_order ?? 500) - Number(b.display_order ?? 500)
+  );
+
+  if (!uniqueLinks.length) {
+    container.innerHTML = emptyMessage(
+      "No official links have been added yet."
+    );
+    return;
+  }
+
+  const grouped = new Map();
+
+  uniqueLinks.forEach(link => {
+    const category = linkCategory(link);
+
+    if (!grouped.has(category)) {
+      grouped.set(category, []);
+    }
+
+    grouped.get(category).push(link);
+  });
+
+  container.innerHTML = Array.from(grouped.entries())
+    .map(([category, rows]) => `
+      <section class="links-socials-group">
+        <div class="links-socials-heading">
+          <h3>${escapeHtml(category)}</h3>
+          <p>${escapeHtml(linkCategoryDescription(category))}</p>
+        </div>
+
+        <div class="links-socials-grid">
+          ${rows.map(link => `
+            <article class="link-social-card">
+              <div class="link-social-copy">
+                <span class="link-social-type">
+                  ${escapeHtml(formatLinkType(link.link_type))}
+                </span>
+
+                <h4>${escapeHtml(
+                  link.label || formatLinkType(link.link_type)
+                )}</h4>
+
+                ${
+                  link.audience || link.region || link.country
+                    ? `
+                      <p>
+                        ${escapeHtml(
+                          [link.audience, link.region, link.country]
+                            .filter(Boolean)
+                            .join(" · ")
+                        )}
+                      </p>
+                    `
+                    : ""
+                }
+              </div>
+
+              ${profileLink(link.url, "Open official page", `Open official page — ${link.label || formatLinkType(link.link_type)}`)}
+            </article>
+          `).join("")}
+        </div>
+      </section>
+    `)
+    .join("");
+}
+
+function linkCategory(link) {
+  const type = String(link.link_type || "").toLowerCase();
+
+  if (["linkedin", "instagram", "youtube", "tiktok", "facebook", "x", "twitter"].includes(type)) {
+    return "Social media";
+  }
+
+  if (["edi", "contact", "accessibility"].includes(type)) {
+    return "EDI, access and contact";
+  }
+
+  if (
+    type.includes("pupillage") ||
+    type.includes("application") ||
+    type.includes("mini_") ||
+    type === "opportunity"
+  ) {
+    return "Applications and opportunities";
+  }
+
+  if (
+    type.includes("office") ||
+    type.includes("location")
+  ) {
+    return "Locations";
+  }
+
+  return "Websites and careers";
+}
+
+function linkCategoryDescription(category) {
+  const descriptions = {
+    "Websites and careers":
+      "Official chambers and careers pages.",
+    "Applications and opportunities":
+      "Official application portals and programme pages.",
+    "EDI, access and contact":
+      "Official inclusion, accessibility and contact information.",
+    "Locations":
+      "Official London, regional or office-specific pages.",
+    "Social media":
+      "Verified official social accounts."
+  };
+
+  return descriptions[category] || "Official chambers links.";
+}
+
+/* =======================================
+   Reusable research components
+======================================= */
+
+function researchItem(label, title, summary, sections, sourceUrl) {
+  const cleanSections = (sections || []).filter(Boolean).join("");
+
+  return `
+    <details class="research-item">
+      <summary class="research-item-summary">
+        <div class="research-item-copy">
+          <span class="research-item-label">${escapeHtml(label)}</span>
+          <h3>${escapeHtml(title)}</h3>
+          ${
+            summary
+              ? `<p>${escapeHtml(summary)}</p>`
+              : ""
+          }
+        </div>
+
+        <span class="research-item-action" aria-hidden="true"></span>
+      </summary>
+
+      <div class="research-item-expanded">
+        ${cleanSections}
+
+        ${
+          sourceUrl
+            ? `
+              <div class="research-source-row">
+                ${profileLink(sourceUrl, "Open official source", `Open official source — ${title}`)}
+              </div>
+            `
+            : ""
+        }
+      </div>
+    </details>
+  `;
+}
+
+function researchTextSection(title, value) {
+  if (!hasText(value)) {
+    return "";
+  }
+
+  return `
+    <section class="research-detail-section">
+      <h4>${escapeHtml(title)}</h4>
+      <p>${escapeHtml(value)}</p>
+    </section>
+  `;
+}
+
+function researchFacts(entries) {
+  const facts = (entries || [])
+    .filter(([, value]) => hasText(value))
+    .map(([label, value]) => `
+      <div class="research-fact">
+        <span>${escapeHtml(label)}</span>
+        <strong>${escapeHtml(value)}</strong>
+      </div>
+    `)
+    .join("");
+
+  return facts
+    ? `<div class="research-facts">${facts}</div>`
+    : "";
+}
+
+function detailSection(title, values) {
+  const points = uniqueCleanPoints(
+    (values || []).flatMap(splitIntoBulletPoints)
+  );
+
+  if (!points.length) {
+    return "";
+  }
+
+  return `
+    <section class="opportunity-detail-section">
+      <h4>${escapeHtml(title)}</h4>
+
+      <ul class="opportunity-bullets">
+        ${points.map(point => `
+          <li>${escapeHtml(point)}</li>
+        `).join("")}
+      </ul>
+    </section>
+  `;
+}
+
+function opportunityFact(label, value) {
+  if (!hasText(value)) {
+    return "";
+  }
+
+  return `
+    <div class="fact">
+      <span class="fact-label">${escapeHtml(label)}</span>
+      <strong class="fact-value">${escapeHtml(value)}</strong>
+    </div>
+  `;
+}
+
+function glanceCard(label, value, note, evidenceStatus) {
+  return `
+    <article class="glance-card">
+      <div class="glance-card-heading">
+        <h3>${escapeHtml(label)}</h3>
+
+        ${
+          evidenceStatus
+            ? `
+              <span class="evidence-badge ${
+                normaliseStatusClass(evidenceStatus)
+              }">
+                ${escapeHtml(formatStatus(evidenceStatus))}
+              </span>
+            `
+            : ""
+        }
+      </div>
+
+      <p class="glance-value">${escapeHtml(value)}</p>
+
+      ${
+        note
+          ? `<p class="glance-note">${escapeHtml(note)}</p>`
+          : ""
+      }
+    </article>
+  `;
+}
+
+function overviewSummaryCard(title, text, note) {
+  return `
+    <article class="overview-summary-card">
+      <h3>${escapeHtml(title)}</h3>
+      <p>${escapeHtml(text)}</p>
+      ${note ? `<p>${escapeHtml(note)}</p>` : ""}
+    </article>
+  `;
+}
+
+/* =======================================
+   Data interpretation helpers
+======================================= */
+
+function displayOpportunityType(row) {
+  return (
+    row.scheme_type ||
+    inferOpportunityTypeFromSlug(row.slug) ||
+    "Opportunity"
+  );
+}
+
+function inferOpportunityTypeFromSlug(slug) {
+  const value = String(slug || "").toLowerCase();
+
+  if (value.includes("assessed-mini")) {
+    return "Assessed mini-pupillage";
+  }
+
+  if (value.includes("mini-pupillage")) {
+    return "Mini-pupillage";
+  }
+
+  if (value.includes("pupillage")) {
+    return "Pupillage";
+  }
+
+  if (
+    value.includes("probationary-tenancy") ||
+    value.includes("third-six")
+  ) {
+    return "Probationary tenancy";
+  }
+
+  if (value.includes("school") || value.includes("outreach")) {
+    return "School student programme";
+  }
+
+  if (value.includes("work-experience")) {
+    return "Work experience";
+  }
+
+  return "";
+}
+
+function getOpeningDate(row) {
+  return (
+    row.application_open_date ||
+    row.application_open ||
+    row.opens_on ||
+    ""
+  );
+}
+
+function getClosingDate(row) {
+  return (
+    row.application_close_date ||
+    row.application_deadline ||
+    row.deadline ||
+    row.closes_on ||
+    ""
+  );
+}
+
+function getProgrammeDates(row) {
+  if (hasText(row.programme_dates)) {
+    return row.programme_dates;
+  }
+
+  if (hasText(row.programme_dates_text)) {
+    return row.programme_dates_text;
+  }
+
+  const start =
+    row.programme_start_date ||
+    row.programme_start ||
+    "";
+
+  const end = row.programme_end || "";
+
+  if (start && end) {
+    return `${formatDate(start)} to ${formatDate(end)}`;
+  }
+
+  return start ? formatDate(start) : "";
+}
+
+function buildAwardSummary(opportunities) {
+  const funded = opportunities.filter(row =>
+    hasText(row.pay_details) || hasText(row.salary)
+  );
+
+  if (!funded.length) {
+    return null;
+  }
+
+  const pupillage = funded.find(row =>
+    /pupillage/i.test(displayOpportunityType(row)) &&
+    !/mini/i.test(displayOpportunityType(row))
+  );
+
+  const selected = pupillage || funded[0];
+  const value = selected.salary || selected.pay_details;
+
+  return {
+    value,
+    note:
+      selected.scheme_name ||
+      "Officially published funding information"
+  };
+}
+
+function hasAccessibilityInformation() {
+  const linkMatch = state.links.some(link =>
+    /edi|access|contact/i.test(String(link.link_type || ""))
+  );
+
+  const locationMatch = state.locations.some(location =>
+    /access|wheelchair|step-free|adjustment|facilit/i.test(
+      String(location.student_recruitment_note || "")
+    )
+  );
+
+  return linkMatch || locationMatch;
+}
+
+function findLinkUrlByTypes(types) {
+  const wanted = types.map(type => String(type).toLowerCase());
+
+  const match = state.links.find(link =>
+    wanted.includes(String(link.link_type || "").toLowerCase())
+  );
+
+  return match?.url || "";
+}
+
+function isOpportunityOpenNow(row) {
+  const opening = parseDate(getOpeningDate(row));
+  const closing = parseDate(getClosingDate(row));
+  const today = startOfToday();
+
+  if (opening && closing) {
+    return opening <= today && closing >= today;
+  }
+
+  if (!opening && closing) {
+    return closing >= today &&
+      !/closed/i.test(String(row.status || ""));
+  }
+
+  return /open/i.test(String(row.status || "")) &&
+    !/closed/i.test(String(row.status || ""));
+}
+
+/* =======================================
+   Formatting and safety
+======================================= */
+
+function profileLink(url, label, accessibleLabel = label) {
+  const safe = safeUrl(url);
+
+  if (!safe) {
+    return "";
+  }
+
+  return `
+    <a
+      class="profile-external-link"
+      href="${escapeHtml(safe)}"
+      aria-label="${escapeHtml(accessibleLabel)}"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      <span>${escapeHtml(label)}</span>
+      ${externalLinkIcon()}
+    </a>
+  `;
+}
+
+function heroAction(url, label, primary) {
+  const safe = safeUrl(url);
+
+  if (!safe) {
+    return "";
+  }
+
+  return `
+    <a
+      class="hero-action ${primary ? "primary" : ""}"
+      href="${escapeHtml(safe)}"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      <span>${escapeHtml(label)}</span>
+      ${externalLinkIcon()}
+    </a>
+  `;
+}
+
+function metaPill(icon, text) {
+  return `
+    <span class="profile-meta-pill">
+      ${icon}
+      <span>${escapeHtml(text)}</span>
+    </span>
+  `;
+}
+
+function emptyMessage(message) {
+  return `
+    <p class="profile-section-message">
+      ${escapeHtml(message)}
+    </p>
+  `;
+}
+
+function formatLinkType(value) {
+  return String(value || "Official link")
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, letter => letter.toUpperCase());
+}
+
+function formatStatus(value) {
+  if (!hasText(value)) {
+    return "";
+  }
+
+  return String(value)
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, letter => letter.toUpperCase());
+}
+
+function normaliseStatusClass(value) {
+  const text = normaliseText(value).replace(/\s+/g, "-");
+
+  if (text.includes("verified") || text.includes("confirmed")) {
+    return "verified";
+  }
+
+  if (
+    text.includes("unpublished") ||
+    text.includes("not-published") ||
+    text.includes("needs-review")
+  ) {
+    return "unpublished";
+  }
+
+  return text || "unpublished";
+}
+
+function formatDate(value) {
+  const date = parseDate(value);
+
+  if (!date) {
+    return "";
+  }
+
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric"
+  }).format(date);
+}
+
+function parseDate(value) {
+  if (!value) {
+    return null;
+  }
+
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return new Date(
+      value.getFullYear(),
+      value.getMonth(),
+      value.getDate()
+    );
+  }
+
+  const text = String(value).trim();
+  const match = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
+
+  if (match) {
+    const date = new Date(
+      Number(match[1]),
+      Number(match[2]) - 1,
+      Number(match[3])
+    );
+
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  const date = new Date(text);
+
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function dateValue(value) {
+  const date = parseDate(value);
+  return date ? date.getTime() : Number.MAX_SAFE_INTEGER;
+}
+
+function dateSortGroup(value) {
+  const date = parseDate(value);
+
+  if (!date) {
+    return 1;
+  }
+
+  return date >= startOfToday() ? 0 : 2;
+}
+
+function isFutureOrToday(value) {
+  const date = parseDate(value);
+  return Boolean(date && date >= startOfToday());
+}
+
+function startOfToday() {
+  const today = new Date();
+
+  return new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate()
+  );
+}
+
+function splitIntoBulletPoints(value) {
+  if (!hasText(value)) {
+    return [];
+  }
+
+  if (Array.isArray(value)) {
+    return value.flatMap(splitIntoBulletPoints);
+  }
+
+  if (typeof value === "object") {
+    return Object.values(value).flatMap(splitIntoBulletPoints);
+  }
+
+  const text = String(value)
+    .replace(/\r/g, "\n")
+    .replace(/[•●▪◦]/g, "\n")
+    .replace(/\s+[–—-]\s+/g, "\n")
+    .replace(/;\s+/g, "\n")
+    .replace(/\n{2,}/g, "\n")
+    .trim();
+
+  let points = text
+    .split("\n")
+    .map(cleanPoint)
+    .filter(Boolean);
+
+  if (points.length === 1 && points[0].length > 180) {
+    points = points[0]
+      .split(/(?<=[.!?])\s+(?=[A-Z0-9£])/)
+      .map(cleanPoint)
+      .filter(Boolean);
+  }
+
+  return points;
+}
+
+function cleanPoint(value) {
+  return String(value || "")
+    .replace(/^[\s:;,.–—-]+/, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function uniqueCleanPoints(values) {
+  const seen = new Set();
+  const output = [];
+
+  (values || []).forEach(value => {
+    if (!hasText(value)) {
+      return;
+    }
+
+    const cleaned = cleanPoint(value);
+    const key = normaliseText(cleaned);
+
+    if (!key || seen.has(key)) {
+      return;
+    }
+
+    seen.add(key);
+    output.push(cleaned);
+  });
+
+  return output;
+}
+
+function deduplicateObjects(items, keyFunction) {
+  const seen = new Set();
+  const output = [];
+
+  (items || []).forEach(item => {
+    const key = keyFunction(item);
+
+    if (!key || seen.has(key)) {
+      return;
+    }
+
+    seen.add(key);
+    output.push(item);
+  });
+
+  return output;
+}
+
+function deduplicateStrings(values) {
+  return uniqueCleanPoints(values);
+}
+
+function shortSummary(value, maxLength = 230) {
+  const text = cleanPoint(value);
+
+  if (text.length <= maxLength) {
+    return text;
+  }
+
+  return `${text.slice(0, maxLength).replace(/\s+\S*$/, "")}…`;
+}
+
+function normaliseText(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+function hasText(value) {
+  if (value === null || value === undefined) {
+    return false;
+  }
+
+  if (Array.isArray(value)) {
+    return value.some(hasText);
+  }
+
+  if (typeof value === "object") {
+    return Object.values(value).some(hasText);
+  }
+
+  return String(value).trim() !== "";
+}
+
+function safeUrl(value) {
+  if (!hasText(value)) {
+    return "";
+  }
+
+  try {
+    const url = new URL(String(value), window.location.href);
+
+    if (!["http:", "https:"].includes(url.protocol)) {
+      return "";
+    }
+
+    return url.href;
+  } catch {
+    return "";
+  }
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+/* =======================================
+   Icons
+======================================= */
+
+function externalLinkIcon() {
+  return `
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      aria-hidden="true"
+    >
+      <path d="M14 3h7v7"></path>
+      <path d="M10 14L21 3"></path>
+      <path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"></path>
+    </svg>
+  `;
+}
+
+function chevronIcon() {
+  return `
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+    >
+      <path d="M6 9l6 6 6-6"></path>
+    </svg>
+  `;
+}
+
+function locationIcon() {
+  return `
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      aria-hidden="true"
+    >
+      <path d="M12 21s6-5.1 6-11a6 6 0 1 0-12 0c0 5.9 6 11 6 11z"></path>
+      <circle cx="12" cy="10" r="2"></circle>
+    </svg>
+  `;
+}
+
+function circuitIcon() {
+  return `
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="9"></circle>
+      <path d="M12 7v5l3 2"></path>
+    </svg>
+  `;
+}
+
+function buildingIcon() {
+  return `
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      aria-hidden="true"
+    >
+      <path d="M4 21V6l8-3 8 3v15"></path>
+      <path d="M9 21v-5h6v5"></path>
+      <path d="M8 9h.01M12 9h.01M16 9h.01M8 13h.01M12 13h.01M16 13h.01"></path>
+    </svg>
+  `;
+}
+
+function linkIcon() {
+  return `
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      aria-hidden="true"
+    >
+      <path d="M10 13a5 5 0 0 0 7.1 0l2.8-2.8a5 5 0 0 0-7.1-7.1L11.2 4.7"></path>
+      <path d="M14 11a5 5 0 0 0-7.1 0l-2.8 2.8a5 5 0 0 0 7.1 7.1l1.6-1.6"></path>
+    </svg>
+  `;
+}
