@@ -3622,3 +3622,268 @@ function linkIcon() {
     </svg>
   `;
 }
+
+
+/* VACATORY_CANONICAL_PROFILE_LAZY_TABS_20260817
+   Fetch and render chambers tab data only when the relevant tab is activated,
+   and keep the active tab in a shareable ?tab= URL. */
+const vacatoryChamberLazyTabs = new Set([
+  "overview",
+  "opportunities",
+  "practice-areas",
+  "locations",
+  "pupillage-tenancy",
+  "funding",
+  "edi",
+  "highlights",
+  "links-socials"
+]);
+const vacatoryChamberLoadedTabs = new Set();
+const vacatoryChamberDataPromises = {};
+
+function vacatoryChamberTabFromUrl() {
+  const requested = new URLSearchParams(window.location.search).get("tab");
+  return vacatoryChamberLazyTabs.has(requested) ? requested : "overview";
+}
+
+function vacatoryChamberUpdateTabUrl(tab, mode = "push") {
+  if (mode === "none") return;
+  const url = new URL(window.location.href);
+  if (tab === "overview") url.searchParams.delete("tab");
+  else url.searchParams.set("tab", tab);
+  history[mode === "replace" ? "replaceState" : "pushState"](
+    history.state,
+    "",
+    `${url.pathname}${url.search}${url.hash}`
+  );
+}
+
+function vacatoryChamberEnsureData(key, loader) {
+  if (!vacatoryChamberDataPromises[key]) {
+    vacatoryChamberDataPromises[key] = Promise.resolve()
+      .then(loader)
+      .catch(error => {
+        delete vacatoryChamberDataPromises[key];
+        throw error;
+      });
+  }
+  return vacatoryChamberDataPromises[key];
+}
+
+function vacatoryChamberOpportunities() {
+  return vacatoryChamberEnsureData("opportunities", async () => {
+    state.opportunities = await loadOpportunityRows(state.chamber.organisation_id);
+  });
+}
+
+function vacatoryChamberPracticeAreas() {
+  return vacatoryChamberEnsureData("practiceAreas", async () => {
+    state.practiceAreas = await loadPracticeAreaRows(state.chamber.organisation_id);
+  });
+}
+
+function vacatoryChamberLocations() {
+  return vacatoryChamberEnsureData("locations", async () => {
+    state.locations = await loadLocationRows(state.chamber.organisation_id);
+  });
+}
+
+function vacatoryChamberLinks() {
+  return vacatoryChamberEnsureData("links", async () => {
+    state.links = await loadLinkRows(state.chamber.organisation_id);
+  });
+}
+
+function vacatoryChamberRankings() {
+  return vacatoryChamberEnsureData("rankings", async () => {
+    state.rankings = await loadRankingRows(state.chamber.organisation_id);
+  });
+}
+
+async function vacatoryChamberEnsureTab(tab) {
+  if (!state.chamber || vacatoryChamberLoadedTabs.has(tab)) return;
+
+  const loaders = {
+    overview: async () => {
+      await Promise.all([
+        vacatoryChamberOpportunities(),
+        vacatoryChamberPracticeAreas(),
+        vacatoryChamberLocations(),
+        vacatoryChamberLinks()
+      ]);
+      renderOverview();
+    },
+    opportunities: async () => {
+      await vacatoryChamberOpportunities();
+      renderOpportunityFilters();
+      renderOpportunities();
+    },
+    "practice-areas": async () => {
+      await vacatoryChamberPracticeAreas();
+      renderPracticeAreas();
+    },
+    locations: async () => {
+      await vacatoryChamberLocations();
+      renderLocations();
+    },
+    "pupillage-tenancy": async () => {
+      await vacatoryChamberOpportunities();
+      renderPupillageAndTenancy();
+    },
+    funding: async () => {
+      await vacatoryChamberOpportunities();
+      renderFunding();
+    },
+    edi: async () => {
+      await Promise.all([
+        vacatoryChamberOpportunities(),
+        vacatoryChamberLocations(),
+        vacatoryChamberLinks()
+      ]);
+      renderEdi();
+    },
+    highlights: async () => {
+      await vacatoryChamberRankings();
+      renderHighlights();
+    },
+    "links-socials": async () => {
+      await vacatoryChamberLinks();
+      renderLinksAndSocials();
+    }
+  };
+
+  const loader = loaders[tab];
+  if (!loader) return;
+  const panel = document.getElementById(`tab-${tab}`);
+  vacatoryChamberLoadedTabs.add(tab);
+  panel?.setAttribute("aria-busy", "true");
+
+  try {
+    await loader();
+  } catch (error) {
+    vacatoryChamberLoadedTabs.delete(tab);
+    console.error(`Unable to load ${tab} tab:`, error);
+  } finally {
+    panel?.removeAttribute("aria-busy");
+  }
+}
+
+function vacatoryChamberSelectTab(tab, options = {}) {
+  const selected = vacatoryChamberLazyTabs.has(tab) ? tab : "overview";
+  const tabs = Array.from(document.querySelectorAll(".tab-btn"));
+  const panels = Array.from(document.querySelectorAll(".tab-panel"));
+
+  tabs.forEach(button => {
+    const active = button.dataset.tab === selected;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-selected", String(active));
+    button.tabIndex = active ? 0 : -1;
+  });
+
+  panels.forEach(panel => {
+    const active = panel.id === `tab-${selected}`;
+    panel.classList.toggle("active", active);
+    panel.hidden = !active;
+  });
+
+  if (options.focus) {
+    document.getElementById(`tab-${selected}`)?.focus({ preventScroll: true });
+  }
+
+  vacatoryChamberUpdateTabUrl(selected, options.historyMode || "push");
+  void vacatoryChamberEnsureTab(selected);
+}
+
+setupProfileTabs = function () {
+  const tabs = Array.from(document.querySelectorAll(".tab-btn"));
+
+  tabs.forEach(tab => {
+    tab.addEventListener("click", () => {
+      vacatoryChamberSelectTab(tab.dataset.tab, {
+        historyMode: "push",
+        focus: true
+      });
+    });
+
+    tab.addEventListener("keydown", event => {
+      const currentIndex = tabs.indexOf(tab);
+      let nextIndex = null;
+      if (event.key === "ArrowRight") nextIndex = (currentIndex + 1) % tabs.length;
+      if (event.key === "ArrowLeft") nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+      if (event.key === "Home") nextIndex = 0;
+      if (event.key === "End") nextIndex = tabs.length - 1;
+
+      if (nextIndex !== null) {
+        event.preventDefault();
+        tabs[nextIndex].focus();
+        tabs[nextIndex].click();
+      }
+    });
+  });
+};
+
+loadChamberProfile = async function () {
+  if (typeof client === "undefined") {
+    console.error("The Supabase client is unavailable.");
+    showProfileError();
+    return;
+  }
+
+  const requestedTab = vacatoryChamberTabFromUrl();
+
+  try {
+    const [chamberResult, organisationResult] = await Promise.all([
+      client
+        .from("chambers")
+        .select("*")
+        .eq("organisation_id", chamberId)
+        .eq("active", true)
+        .single(),
+      client
+        .from("legal_organisations")
+        .select("*")
+        .eq("id", chamberId)
+        .eq("organisation_type", "barristers_chambers")
+        .eq("active", true)
+        .single()
+    ]);
+
+    if (chamberResult.error || !chamberResult.data) {
+      throw chamberResult.error || new Error("Chambers record not found.");
+    }
+    if (organisationResult.error || !organisationResult.data) {
+      throw organisationResult.error || new Error("Organisation record not found.");
+    }
+
+    state.chamber = {
+      ...organisationResult.data,
+      ...chamberResult.data,
+      organisation_id: chamberResult.data.organisation_id,
+      id: organisationResult.data.id,
+      name: organisationResult.data.name,
+      short_name: organisationResult.data.short_name,
+      logo_url: organisationResult.data.logo_url,
+      website_url: organisationResult.data.website_url,
+      careers_url: organisationResult.data.careers_url,
+      overview: organisationResult.data.overview,
+      official_domain: organisationResult.data.official_domain,
+      head_office_city: organisationResult.data.head_office_city,
+      head_office_country: organisationResult.data.head_office_country,
+      organisation_research_status: organisationResult.data.research_status,
+      organisation_research_checked_on: organisationResult.data.research_checked_on,
+      organisation_next_review_on: organisationResult.data.next_review_on
+    };
+
+    renderHeader(state.chamber);
+    hideLoadingAndShowProfile();
+    vacatoryChamberSelectTab(requestedTab, { historyMode: "replace" });
+  } catch (error) {
+    console.error("Unable to load chambers profile:", error);
+    showProfileError();
+  }
+};
+
+window.addEventListener("popstate", () => {
+  if (!state.chamber) return;
+  vacatoryChamberSelectTab(vacatoryChamberTabFromUrl(), { historyMode: "none" });
+});
