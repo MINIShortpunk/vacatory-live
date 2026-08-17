@@ -1,1 +1,76 @@
-.scholarships-page .scholarship-status .event-date-day{margin-top:6px;font-size:.82rem;letter-spacing:.035em}.scholarships-page .scholarship-status-open{border-color:#17613f;background:#17613f}.scholarships-page .scholarship-status-upcoming{border-color:#704d00;background:#704d00}.scholarships-page .scholarship-status-closed{border-color:#625d68;background:#625d68}[data-theme=dark] .scholarships-page .scholarship-status-closed,[data-theme=dark] .scholarships-page .scholarship-status-open,[data-theme=dark] .scholarships-page .scholarship-status-upcoming{color:#fff}.scholarships-page .scholarship-summary{max-width:74ch;line-height:1.55}.scholarships-page .scholarship-provider-kind{color:var(--muted);font-weight:600}@media (max-width:680px){.scholarships-page .scholarship-status .event-date-day{font-size:.72rem}}
+/* Dedicated Scholarships page; card geometry remains shared with Events. */
+
+.scholarships-page .scholarship-status .event-date-day {
+  margin-top: 6px;
+  font-size: 0.82rem;
+  letter-spacing: 0.035em;
+}
+
+.scholarships-page .scholarship-status-open {
+  border-color: #17613f;
+  background: #17613f;
+}
+
+.scholarships-page .scholarship-status-upcoming {
+  border-color: #704d00;
+  background: #704d00;
+}
+
+.scholarships-page .scholarship-status-closed {
+  border-color: #625d68;
+  background: #625d68;
+}
+
+[data-theme="dark"] .scholarships-page .scholarship-status-open,
+[data-theme="dark"] .scholarships-page .scholarship-status-upcoming,
+[data-theme="dark"] .scholarships-page .scholarship-status-closed {
+  color: #ffffff;
+}
+
+.scholarships-page .scholarship-summary {
+  max-width: 74ch;
+  line-height: 1.55;
+}
+
+.scholarships-page .scholarship-provider-kind {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+@media (max-width: 680px) {
+  .scholarships-page .scholarship-status .event-date-day {
+    font-size: 0.72rem;
+  }
+}
+
+
+/* VACATORY_SCHOLARSHIP_CARD_LOCATION_LAYOUT_20260817 */
+.scholarships-page .scholarship-row {
+  grid-template-columns: 108px 62px minmax(0, 1fr) auto;
+}
+
+.scholarships-page .scholarship-status {
+  min-width: 0;
+}
+
+.scholarships-page .scholarship-status .event-date-month {
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+}
+
+@media (max-width: 900px) {
+  .scholarships-page .scholarship-row {
+    grid-template-columns: 96px 54px minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 680px) {
+  .scholarships-page .scholarship-row {
+    grid-template-columns: 88px 48px minmax(0, 1fr);
+  }
+
+  .scholarships-page .scholarship-status .event-date-month {
+    font-size: 0.52rem;
+    letter-spacing: 0.06em;
+  }
+}
