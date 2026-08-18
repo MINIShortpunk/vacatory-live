@@ -1739,6 +1739,7 @@ function renderOpportunityFilters() {
           ? "No opportunities match these filters."
           : "No opportunities have been added for this chambers yet.";
 
+      empty.dataset.vacatoryDeferredState = "confirmed-empty";
       empty.classList.remove("hidden");
     }
 
