@@ -1391,10 +1391,8 @@ function vacatoryFirmApplyTabSeo(tab) {
   const description = `${name} ${vacatoryFirmTabSeo[tab]?.[1] || "firm research"} on Vacatory.`;
   const url = vacatoryFirmTabUrl(tab);
   const title = tab === "overview" ? `${name} | Vacatory` : `${name} ${label} | Vacatory`;
-  const shareImage = normaliseExternalUrl(
-    firm.og_image_url || firm.social_share_image_url || firm.logo_url
-  ) || "https://vacatory.com/hero-legal-desk.jpg";
-  const customImage = shareImage !== "https://vacatory.com/hero-legal-desk.jpg";
+  const shareImage = `https://vacatory.com/assets/social/firm-${firmSlugForUrl(name)}.png`;
+  const shareImageAlt = `${name} firm profile on Vacatory`;
   document.title = title;
   upsertFirmCanonical(url);
   upsertFirmSeoMeta("name", "description", description);
@@ -1402,11 +1400,15 @@ function vacatoryFirmApplyTabSeo(tab) {
   upsertFirmSeoMeta("property", "og:description", description);
   upsertFirmSeoMeta("property", "og:url", url);
   upsertFirmSeoMeta("property", "og:image", shareImage);
-  upsertFirmSeoMeta("property", "og:image:alt", customImage ? `${name} logo` : "Vacatory legal careers research");
-  upsertFirmSeoMeta("name", "twitter:card", customImage ? "summary" : "summary_large_image");
+  upsertFirmSeoMeta("property", "og:image:alt", shareImageAlt);
+  upsertFirmSeoMeta("property", "og:image:width", "1200");
+  upsertFirmSeoMeta("property", "og:image:height", "630");
+  upsertFirmSeoMeta("property", "og:image:type", "image/png");
+  upsertFirmSeoMeta("name", "twitter:card", "summary_large_image");
   upsertFirmSeoMeta("name", "twitter:title", title);
   upsertFirmSeoMeta("name", "twitter:description", description);
   upsertFirmSeoMeta("name", "twitter:image", shareImage);
+  upsertFirmSeoMeta("name", "twitter:image:alt", shareImageAlt);
   vacatoryFirmPageSchema(tab);
 }
 
