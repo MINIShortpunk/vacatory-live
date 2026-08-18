@@ -2401,30 +2401,96 @@ function renderPupillageAndTenancy() {
    Funding
 ======================================= */
 
-function renderFunding() {
-  const container = document.getElementById("fundingList");
-
-  if (!container) {
-    return;
+function chamberUkScopeText(value) {
+  const key = normaliseText(value);
+  if (!key) {
+    return false;
   }
 
-  const cards = [];
+  const haystack = ` ${key} `;
+
+  return [
+    "united kingdom",
+    "great britain",
+    "england",
+    "scotland",
+    "wales",
+    "northern ireland",
+    " uk ",
+    " u k ",
+    "london",
+    "birmingham",
+    "manchester",
+    "leeds",
+    "bristol",
+    "edinburgh",
+    "glasgow",
+    "belfast",
+    "cardiff",
+    "newcastle",
+    "liverpool",
+    "sheffield",
+    "cambridge",
+    "oxford",
+    "exeter",
+    "reading",
+    "southampton",
+    "aberdeen"
+  ].some(term =>
+    haystack.includes(
+      term.startsWith(" ") || term.endsWith(" ")
+        ? term
+        : ` ${term} `
+    )
+  );
+}
+
+function chamberUkOpportunity(row) {
+  const countries = Array.isArray(row?.countries)
+    ? row.countries
+    : [];
+
+  if (countries.some(chamberUkScopeText)) {
+    return true;
+  }
+
+  if (chamberUkScopeText(row?.country)) {
+    return true;
+  }
+
+  return chamberUkScopeText(row?.location);
+}
+
+function chamberUkFundingStatement(row) {
+  const route = normaliseText(
+    [
+      row?.scheme_type,
+      row?.scheme_name
+    ].filter(Boolean).join(" ")
+  );
+
+  const award = /pupillage|tenancy|scholarship|bursary|grant/.test(route)
+    ? row?.pay_details || row?.salary
+    : "";
+
+  return uniqueCleanPoints([
+    row?.sponsorship,
+    award
+  ]).join(" · ");
+}
+
+function chamberUkStatementEntries(rows, valueForRow) {
   const seen = new Set();
+  const entries = [];
 
-  state.opportunities.forEach(row => {
-    const value = row.pay_details || row.salary;
-    const support = uniqueCleanPoints([
-      row.expenses,
-      row.sponsorship
-    ]).join(" · ");
+  (rows || []).forEach(row => {
+    const value = String(valueForRow(row) || "").trim();
 
-    if (!hasText(value) && !hasText(support)) {
+    if (!value) {
       return;
     }
 
-    const key = normaliseText(
-      `${row.scheme_name}|${value}|${support}`
-    );
+    const key = normaliseText(value);
 
     if (seen.has(key)) {
       return;
@@ -2432,45 +2498,96 @@ function renderFunding() {
 
     seen.add(key);
 
-    cards.push(`
-      <article class="funding-card">
-        <h3>${escapeHtml(
-          row.scheme_name || displayOpportunityType(row)
-        )}</h3>
-
-        ${
-          value
-            ? `<p class="funding-value">${escapeHtml(value)}</p>`
-            : ""
-        }
-
-        ${
-          support
-            ? `<p>${escapeHtml(support)}</p>`
-            : ""
-        }
-
-        ${
-          row.source_url || row.application_link
-            ? `
-              <div class="research-source-row">
-                ${profileLink(
-                  row.application_link || row.source_url,
-                  "Official funding source",
-                  `Official funding source — ${row.scheme_name || displayOpportunityType(row)}`
-                )}
-              </div>
-            `
-            : ""
-        }
-      </article>
-    `);
+    entries.push({
+      title:
+        row.scheme_name ||
+        displayOpportunityType(row),
+      value,
+      sourceUrl:
+        row.application_link ||
+        row.source_url ||
+        ""
+    });
   });
 
-  container.innerHTML = cards.length
-    ? cards.join("")
+  return entries;
+}
+
+function chamberUkFirmStatement(
+  title,
+  summaryFallback,
+  detailTitle,
+  entries,
+  preferredSource
+) {
+  if (!entries.length) {
+    return "";
+  }
+
+  const statements = entries.map(entry =>
+    entry.title
+      ? `${entry.title}: ${entry.value}`
+      : entry.value
+  );
+
+  return researchItem(
+    "United Kingdom",
+    title,
+    shortSummary(entries[0].value || summaryFallback),
+    [
+      researchTextSection(
+        detailTitle,
+        statements.join(" · ")
+      )
+    ],
+    preferredSource ||
+      entries.find(entry => entry.sourceUrl)?.sourceUrl ||
+      ""
+  );
+}
+
+function renderFunding() {
+  const container = document.getElementById("fundingList");
+
+  if (!container) {
+    return;
+  }
+
+  const ukOpportunities = state.opportunities
+    .filter(row => !Boolean(row?.canonical_opportunity?.isEvent))
+    .filter(chamberUkOpportunity);
+
+  const visaEntries = chamberUkStatementEntries(
+    ukOpportunities,
+    row => row.right_to_work_requirements
+  );
+
+  const fundingEntries = chamberUkStatementEntries(
+    ukOpportunities,
+    chamberUkFundingStatement
+  );
+
+  const items = [
+    chamberUkFirmStatement(
+      "UK visa sponsorship and right to work",
+      "Published visa sponsorship and right-to-work information for joining chambers in the UK.",
+      "Published UK visa and right-to-work guidance",
+      visaEntries,
+      findLinkUrlByTypes(["careers", "pupillage"])
+    ),
+    chamberUkFirmStatement(
+      "UK pupillage and student funding",
+      "Published pupillage awards, bursaries and other student funding in the UK.",
+      "Published UK funding and support",
+      fundingEntries,
+      findLinkUrlByTypes(["funding", "pupillage", "careers"])
+    )
+  ].filter(Boolean);
+
+  container.innerHTML = items.length
+    ? items.join("")
     : emptyMessage(
-        "No pupillage award, bursary, reimbursement or expenses information is currently stored."
+        "No UK visa, right-to-work or student funding information is currently published for this chambers."
       );
 }
 
@@ -3733,7 +3850,10 @@ async function vacatoryChamberEnsureTab(tab) {
       renderPupillageAndTenancy();
     },
     funding: async () => {
-      await vacatoryChamberOpportunities();
+      await Promise.all([
+        vacatoryChamberOpportunities(),
+        vacatoryChamberLinks()
+      ]);
       renderFunding();
     },
     edi: async () => {
@@ -3898,7 +4018,7 @@ const vacatoryChamberTabSeo = {
   "practice-areas": ["Practice areas", "practice areas and specialisms"],
   locations: ["Locations", "locations and circuit information"],
   "pupillage-tenancy": ["Pupillage & tenancy", "pupillage, tenancy and progression information"],
-  funding: ["Funding", "pupillage awards, scholarships and student funding"],
+  funding: ["UK Visa and Funding", "UK pupillage funding, visa sponsorship and right-to-work information"],
   edi: ["EDI", "equality, diversity, inclusion and accessibility information"],
   highlights: ["Highlights", "rankings and chambers highlights"],
   "links-socials": ["Links & Socials", "official websites, application pages and social channels"]
