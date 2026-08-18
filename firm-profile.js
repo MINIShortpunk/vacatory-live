@@ -2,15 +2,34 @@ const params=new URLSearchParams(window.location.search),firmId=window.__VACATOR
   if(!sharedResearchPromise){
     sharedResearchPromise=(async()=>{
       const api=vacatoryCanonicalApi();
-      const [firmResult,allOpportunities,researchSections,disabilityRows]=await Promise.all([
-        client.from("firms").select("id,organisation_id").eq("id",firmId).maybeSingle(),
-        api.loadOpportunities({client}),
-        readOptionalRows("firm_research_sections","firm_id",firmId),
-        readOptionalRows("firm_disability_support","firm_id",firmId)
+      const firm=vacatoryFirmLazyRecord||{};
+      const providerId=String(
+        firm.organisation_id||
+        firm.id||
+        firmId
+      );
+
+      const[
+        opportunities,
+        researchSections,
+        disabilityRows
+      ]=await Promise.all([
+        api.loadProviderOpportunities({
+          client,
+          providerId,
+          includeSearchIndex:false
+        }),
+        readOptionalRows(
+          "firm_research_sections",
+          "firm_id",
+          firmId
+        ),
+        readOptionalRows(
+          "firm_disability_support",
+          "firm_id",
+          firmId
+        )
       ]);
-      if(firmResult.error)throw firmResult.error;
-      const firm=firmResult.data||{},providerId=String(firm.organisation_id||firm.id||firmId);
-      const opportunities=api.opportunitiesForProvider(allOpportunities,providerId);
 
       if(typeof vacatoryRecordFreshness==="function"){
         vacatoryRecordFreshness(
@@ -19,9 +38,18 @@ const params=new URLSearchParams(window.location.search),firmId=window.__VACATOR
         );
       }
 
-      return{opportunities,researchSections,disabilityRows,providerId};
-    })().catch(error=>{sharedResearchPromise=null;throw error});
+      return{
+        opportunities,
+        researchSections,
+        disabilityRows,
+        providerId
+      };
+    })().catch(error=>{
+      sharedResearchPromise=null;
+      throw error;
+    });
   }
+
   return sharedResearchPromise;
 }async function getSharedLocationRows(firm){
   if(!sharedLocationPromise){
@@ -1146,7 +1174,7 @@ function vacatoryCanonicalVisaSummary(rows,research){
 }
 
 
-/* VACATORY_CANONICAL_PROFILE_LAZY_TABS_20260817
+/* VACATORY_CANONICAL_PROFILE_LAZY_TABS_20260818_PROVIDER_SCOPED
    Render each profile tab once, on first activation, and keep the active tab
    in a shareable ?tab= URL without changing the canonical profile URL. */
 const vacatoryFirmLazyTabs = new Set([
