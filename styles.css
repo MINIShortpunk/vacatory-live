@@ -90,17 +90,17 @@
 
 
 /* VACATORY CANONICAL CARD SURFACE START */
-:where([class$="-card"], [class*="-card "]):not(.page-hero-card):not(.directory-list .firm-card) {
+:where([class$="-card"], [class*="-card "]):not(.page-hero-card):not(.directory-list .firm-card):not(.free-forever-card) {
   border: 2px solid #7d698c !important;
   box-shadow: 0 14px 30px rgba(48, 25, 75, 0.18) !important;
 }
 
-[data-theme="dark"] :where([class$="-card"], [class*="-card "]):not(.page-hero-card):not(.directory-list .firm-card) {
+[data-theme="dark"] :where([class$="-card"], [class*="-card "]):not(.page-hero-card):not(.directory-list .firm-card):not(.free-forever-card) {
   border-color: #b8a6c8 !important;
   box-shadow: 0 16px 34px rgba(0, 0, 0, 0.38) !important;
 }
 
-:where([class$="-card"], [class*="-card "]):not(.page-hero-card):not(.directory-list .firm-card):is(
+:where([class$="-card"], [class*="-card "]):not(.page-hero-card):not(.directory-list .firm-card):not(.free-forever-card):is(
   :hover,
   :focus-visible,
   :focus-within
@@ -111,7 +111,7 @@
     0 14px 30px rgba(48, 25, 75, 0.18) !important;
 }
 
-[data-theme="dark"] :where([class$="-card"], [class*="-card "]):not(.page-hero-card):not(.directory-list .firm-card):is(
+[data-theme="dark"] :where([class$="-card"], [class*="-card "]):not(.page-hero-card):not(.directory-list .firm-card):not(.free-forever-card):is(
   :hover,
   :focus-visible,
   :focus-within
