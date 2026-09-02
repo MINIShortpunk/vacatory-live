@@ -145,3 +145,47 @@
   min-height: 44px;
 }
 /* VACATORY AAA THEME TOGGLE TARGET END */
+/* Site-wide profile section navigation: firms and chambers. */
+body.firm-profile-page .profile-tabs,
+body.chamber-profile-page .profile-tabs {
+  border-bottom-color: #164d39;
+  background: #1f6b4f;
+  color: #fff;
+  backdrop-filter: none;
+}
+
+body.firm-profile-page .profile-tabs .profile-tabs-inner,
+body.chamber-profile-page .profile-tabs .profile-tabs-inner {
+  scrollbar-color: rgba(255, 255, 255, 0.72) transparent;
+}
+
+body.firm-profile-page .profile-tabs .profile-tabs-inner::-webkit-scrollbar-thumb,
+body.chamber-profile-page .profile-tabs .profile-tabs-inner::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.72);
+}
+
+body.firm-profile-page .profile-tabs .tab-btn,
+body.chamber-profile-page .profile-tabs .tab-btn {
+  border-bottom-color: transparent;
+  color: #fff;
+}
+
+body.firm-profile-page .profile-tabs .tab-btn:hover,
+body.firm-profile-page .profile-tabs .tab-btn.active,
+body.firm-profile-page .profile-tabs .tab-btn[aria-selected="true"],
+body.chamber-profile-page .profile-tabs .tab-btn:hover,
+body.chamber-profile-page .profile-tabs .tab-btn.active,
+body.chamber-profile-page .profile-tabs .tab-btn[aria-selected="true"] {
+  border-color: #fff;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+body.firm-profile-page .profile-tabs .tab-btn:focus-visible,
+body.chamber-profile-page .profile-tabs .tab-btn:focus-visible {
+  border-color: #fff;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  outline: 2px solid #fff;
+  outline-offset: -5px;
+}
