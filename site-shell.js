@@ -209,6 +209,18 @@ function siteNoticeMarkup(context) {
   return `<div class="site-notice" role="status" data-vacatory-site-notice><div class="container notice-inner"><span class="notice-dot" aria-hidden="true"></span><strong>${escapeAttribute(content.title)}</strong><span>${escapeAttribute(content.message)}</span></div></div>`;
 }
 
+function ensureSiteNotice() {
+  if (!VACATORY_SITE_NOTICE_VISIBLE || document.querySelector("[data-vacatory-site-notice]")) {
+    return;
+  }
+
+  const shell = document.querySelector("[data-vacatory-site-shell-rendered]");
+
+  if (shell) {
+    shell.insertAdjacentHTML("beforeend", siteNoticeMarkup(inferSiteContextFromPathname(window.location.pathname)));
+  }
+}
+
 export function renderSiteShell({
   pathname = "",
   context = inferSiteContextFromPathname(pathname),
@@ -366,6 +378,8 @@ export function initialiseSiteShell() {
       hrefPrefix: runtimeHrefPrefix()
     });
   }
+
+  ensureSiteNotice();
 
   bindThemeToggle();
   bindMobileNavigation();
