@@ -386,7 +386,7 @@ export function initialiseSiteShell() {
 
   if ("serviceWorker" in navigator && window.location.protocol === "https:") {
     navigator.serviceWorker
-      .register("/sw.js?v=20260904-fast-assets1", {
+      .register("/sw.js?v=20260904-maintenance4", {
         scope: "/",
         updateViaCache: "imports"
       })

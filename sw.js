@@ -1,1 +1,87 @@
-const CACHE="vacatory-v5-20260904-canonical-profiles",CORE_ASSETS=["/","/index.html","/manifest.json","/styles.css","/site-shell.js?v=20260904-fast-assets1","/supabase.js?v=2","/app.js?v=20260904-fast-assets1"];async function networkFirst(e){try{const t=await fetch(e);if(t.ok){const s=await caches.open(CACHE);await s.put(e,t.clone())}return t}catch{return await caches.match(e)||caches.match("/index.html")}}async function staleWhileRevalidate(e,t){const s=await caches.match(e),a=fetch(e).then(async t=>{if(t.ok||"opaque"===t.type){const s=await caches.open(CACHE);await s.put(e,t.clone())}return t}).catch(()=>s||Response.error());return s?(t.waitUntil(a),s):a}self.addEventListener("install",e=>{e.waitUntil(caches.open(CACHE).then(e=>e.addAll(CORE_ASSETS))),self.skipWaiting()}),self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(e=>Promise.all(e.filter(e=>e!==CACHE).map(e=>caches.delete(e))))),self.clients.claim()}),self.addEventListener("fetch",e=>{const t=e.request;if("GET"!==t.method)return;const s=new URL(t.url);if("navigate"===t.mode)return void e.respondWith(networkFirst(t));const a=s.origin===self.location.origin&&["script","style","image","font"].includes(t.destination),n="cdn.jsdelivr.net"===s.hostname&&s.pathname.includes("/@supabase/supabase-js@");(a||n)&&e.respondWith(staleWhileRevalidate(t,e))});
+const CACHE = "vacatory-v7-20260904-maintenance-notice";
+const CORE_ASSETS = [
+  "/",
+  "/index.html",
+  "/manifest.json",
+  "/styles.css",
+  "/site-shell.js?v=20260904-maintenance4",
+  "/supabase.js?v=2",
+  "/app.js?v=20260904-fast-assets1"
+];
+
+self.addEventListener("install", event => {
+  event.waitUntil(
+    caches.open(CACHE).then(cache => cache.addAll(CORE_ASSETS))
+  );
+  self.skipWaiting();
+});
+
+self.addEventListener("activate", event => {
+  event.waitUntil(
+    caches.keys().then(names =>
+      Promise.all(
+        names
+          .filter(name => name !== CACHE)
+          .map(name => caches.delete(name))
+      )
+    )
+  );
+  self.clients.claim();
+});
+
+self.addEventListener("fetch", event => {
+  const request = event.request;
+  if (request.method !== "GET") return;
+
+  const url = new URL(request.url);
+
+  if (request.mode === "navigate") {
+    event.respondWith(networkFirst(request));
+    return;
+  }
+
+  const isLocalStaticAsset =
+    url.origin === self.location.origin &&
+    ["script", "style", "image", "font"].includes(request.destination);
+
+  const isSupabaseLibrary =
+    url.hostname === "cdn.jsdelivr.net" &&
+    url.pathname.includes("/@supabase/supabase-js@");
+
+  if (isLocalStaticAsset || isSupabaseLibrary) {
+    event.respondWith(staleWhileRevalidate(request, event));
+  }
+});
+
+async function networkFirst(request) {
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      const cache = await caches.open(CACHE);
+      await cache.put(request, response.clone());
+    }
+    return response;
+  } catch {
+    return (await caches.match(request)) || caches.match("/index.html");
+  }
+}
+
+async function staleWhileRevalidate(request, event) {
+  const cached = await caches.match(request);
+  const refresh = fetch(request)
+    .then(async response => {
+      if (response.ok || response.type === "opaque") {
+        const cache = await caches.open(CACHE);
+        await cache.put(request, response.clone());
+      }
+      return response;
+    })
+    .catch(() => cached || Response.error());
+
+  if (cached) {
+    event.waitUntil(refresh);
+    return cached;
+  }
+
+  return refresh;
+}
