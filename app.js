@@ -1,1 +1,1997 @@
-window.__vacatoryHomepageAppLoaded="search-results-page-v1";let firms=[],practiceAreasByFirm=new Map,rolesByFirm=new Map,searchTermsByFirm=new Map,homepageSearchResults=null,currentFilteredFirms=[];async function initialiseHomepage(){await Promise.all([loadFirms(),loadHomepageChambers(),loadUpcomingDeadlines()])}function bindHomepageControls(){const e=document.getElementById("searchInput"),n=document.getElementById("filterPracticeArea"),t=document.getElementById("filterRole"),a=document.getElementById("filterFirmType"),r=document.getElementById("filterReset");e?.addEventListener("input",debounce(()=>{renderHomepageSearchResults(applyFilters())},120)),e?.addEventListener("focus",()=>{normalizeText(e.value)&&renderHomepageSearchResults(currentFilteredFirms)}),n?.addEventListener("change",applyFilters),t?.addEventListener("change",applyFilters),a?.addEventListener("change",applyFilters),r?.addEventListener("click",resetFilters),e?.addEventListener("keydown",n=>{if("Escape"===n.key)return hideHomepageSearchResults(),void e.blur();if("Enter"!==n.key)return;n.preventDefault(),applyFilters();const t=e.value.trim();t&&(window.location.href=`search-results.html?q=${encodeURIComponent(t)}`)}),document.addEventListener("click",e=>{const n=document.getElementById("firm-search");n&&!n.contains(e.target)&&hideHomepageSearchResults()})}async function loadFirms(){const e=document.getElementById("firms"),n=document.getElementById("firmCount");if(!e)return;if(setFirmLoadingState(e,n),"undefined"==typeof client)return void showFirmLoadError(e,n,"The database connection is not available.");const{data:t,error:a}=await client.from("firms").select("\n      id,\n      name,\n      short_name,\n      slug,\n      uk_rank,\n      firm_type,\n      circle_classification,\n      head_office,\n      head_office_city,\n      head_office_country,\n      active\n    ").eq("active",!0).order("uk_rank",{ascending:!0,nullsFirst:!1}).order("name",{ascending:!0});if(a)return console.error("Unable to load firms:",a),void showFirmLoadError(e,n,"Unable to load firms at the moment.");firms=t||[],displayFirms(firms),await loadDirectoryData(),populateFilterOptions();const r=applyFilters(),i=document.getElementById("searchInput");i&&normalizeText(i.value)&&renderHomepageSearchResults(r)}async function loadDirectoryData(){const e=firms.map(e=>e.id);if(practiceAreasByFirm=new Map,rolesByFirm=new Map,searchTermsByFirm=new Map,!e.length)return;e.forEach(e=>{searchTermsByFirm.set(e,new Set)});const n=await Promise.allSettled([client.from("practice_areas").select("\n          firm_id,\n          practice_area\n        ").in("firm_id",e),client.from("firm_roles_public_view").select("\n          firm_id,\n          role_name,\n          role_group,\n          student_relevance,\n          confirmed,\n          active\n        ").in("firm_id",e).eq("active",!0).eq("confirmed",!0),client.from("locations").select("\n          firm_id,\n          city,\n          country\n        ").in("firm_id",e).eq("active",!0),client.from("opportunity_cards_view").select("\n          firm_id,\n          opportunity_name,\n          opportunity_type_label,\n          location_summary\n        ").in("firm_id",e),client.from("training_contract_cards_view").select("\n          firm_id,\n          programme_name,\n          programme_type_label,\n          location_summary\n        ").in("firm_id",e).eq("active",!0)]),[t,a,r,i,o]=n.map(getSettledQueryRows);addPracticeAreaData(t),addRoleData(a),addLocationSearchData(r),addOpportunitySearchData(i),addTrainingContractSearchData(o)}function getSettledQueryRows(e){return"rejected"===e.status?(console.warn("Homepage supporting query failed:",e.reason),[]):e.value?.error?(console.warn("Homepage supporting query failed:",e.value.error),[]):e.value?.data||[]}function addPracticeAreaData(e){e.forEach(e=>{e.firm_id&&e.practice_area&&(addToMapSet(practiceAreasByFirm,e.firm_id,e.practice_area),addSearchTerm(e.firm_id,e.practice_area))})}function addRoleData(e){const n=new Set(["entry_route","legal_role","knowledge_innovation","business_services","qualification_status","programme"]);e.forEach(e=>{e.firm_id&&e.role_name&&((n.has(e.role_group)||["primary","strong","context"].includes(e.student_relevance))&&addToMapSet(rolesByFirm,e.firm_id,e.role_name),addSearchTerm(e.firm_id,e.role_name))})}function addLocationSearchData(e){e.forEach(e=>{e.firm_id&&(addSearchTerm(e.firm_id,e.city),addSearchTerm(e.firm_id,e.country))})}function addOpportunitySearchData(e){e.forEach(e=>{e.firm_id&&(addSearchTerm(e.firm_id,e.opportunity_name),addSearchTerm(e.firm_id,e.opportunity_type_label),addSearchTerm(e.firm_id,e.location_summary))})}function addTrainingContractSearchData(e){e.forEach(e=>{e.firm_id&&(addSearchTerm(e.firm_id,e.programme_name),addSearchTerm(e.firm_id,e.programme_type_label),addSearchTerm(e.firm_id,e.location_summary))})}function addToMapSet(e,n,t){t&&(e.has(n)||e.set(n,new Set),e.get(n).add(t))}function addSearchTerm(e,n){e&&n&&(searchTermsByFirm.has(e)||searchTermsByFirm.set(e,new Set),searchTermsByFirm.get(e).add(String(n)))}function populateFilterOptions(){const e=new Set,n=new Set,t=new Set;practiceAreasByFirm.forEach(n=>{n.forEach(n=>{e.add(n)})}),rolesByFirm.forEach(e=>{e.forEach(e=>{n.add(e)})}),firms.forEach(e=>{e.firm_type&&t.add(e.firm_type)}),fillSelect("filterPracticeArea",e,"All practice areas"),fillSelect("filterRole",n,"All roles"),fillSelect("filterFirmType",t,"All firm types")}function fillSelect(e,n,t){const a=document.getElementById(e);if(!a)return;const r=a.value,i=document.createDocumentFragment(),o=document.createElement("option");o.value="",o.textContent=t,i.appendChild(o),Array.from(n).filter(Boolean).sort((e,n)=>e.localeCompare(n,"en-GB")).forEach(e=>{const n=document.createElement("option");n.value=e,n.textContent=e,i.appendChild(n)}),a.replaceChildren(i),Array.from(a.options).some(e=>e.value===r)&&(a.value=r)}function applyFilters(){const e=normalizeText(document.getElementById("searchInput")?.value||""),n=document.getElementById("filterPracticeArea")?.value||"",t=document.getElementById("filterRole")?.value||"",a=document.getElementById("filterFirmType")?.value||"",r=document.getElementById("filterReset"),i=firms.filter(r=>{const i=practiceAreasByFirm.get(r.id)||new Set,o=rolesByFirm.get(r.id)||new Set,s=searchTermsByFirm.get(r.id)||new Set,c=normalizeText([r.name,r.short_name,r.firm_type,r.circle_classification,r.head_office,r.head_office_city,r.head_office_country,r.uk_rank,...s].filter(Boolean).join(" ")),l=!e||c.includes(e),m=!n||i.has(n),d=!t||o.has(t),p=!a||r.firm_type===a;return l&&m&&d&&p}),o=Boolean(e||n||t||a);return r?.classList.toggle("hidden",!o),currentFilteredFirms=i,displayFirms(i),i}function resetFilters(){const e=document.getElementById("searchInput"),n=document.getElementById("filterPracticeArea"),t=document.getElementById("filterRole"),a=document.getElementById("filterFirmType");e&&(e.value=""),n&&(n.value=""),t&&(t.value=""),a&&(a.value=""),applyFilters(),hideHomepageSearchResults(),e?.focus()}function createHomepageSearchResults(){const e=document.getElementById("firm-search"),n=document.getElementById("searchInput");e&&n&&(n.setAttribute("role","combobox"),n.setAttribute("aria-autocomplete","list"),n.setAttribute("aria-controls","homepageSearchResults"),n.setAttribute("aria-expanded","false"),e.classList.add("homepage-search-enhanced"),homepageSearchResults=document.createElement("div"),homepageSearchResults.id="homepageSearchResults",homepageSearchResults.className="homepage-search-results",homepageSearchResults.setAttribute("role","listbox"),homepageSearchResults.setAttribute("aria-label","Firm search results"),homepageSearchResults.hidden=!0,document.body.appendChild(homepageSearchResults),injectHomepageSearchStyles(),window.addEventListener("resize",positionHomepageSearchResults),window.addEventListener("scroll",positionHomepageSearchResults,!0))}function positionHomepageSearchResults(){const e=document.getElementById("searchInput");if(!homepageSearchResults||!e||homepageSearchResults.hidden)return;const n=e.getBoundingClientRect(),t=Math.max(0,window.innerHeight-n.bottom-8-12),a=Math.max(0,n.top-8-12),r=Math.min(420,homepageSearchResults.scrollHeight),i=t<180&&a>t,o=i?a:t,s=Math.max(0,Math.min(r,420,o)),c=Math.max(12,Math.min(n.left,window.innerWidth-n.width-12)),l=Math.min(n.width,window.innerWidth-24);homepageSearchResults.style.left=`${c}px`,homepageSearchResults.style.width=`${l}px`,homepageSearchResults.style.maxHeight=`${s}px`,homepageSearchResults.dataset.position=i?"above":"below",i?(homepageSearchResults.style.top="",homepageSearchResults.style.bottom=window.innerHeight-n.top+8+"px"):(homepageSearchResults.style.bottom="",homepageSearchResults.style.top=`${n.bottom+8}px`)}function renderHomepageSearchResults(e){const n=document.getElementById("searchInput");if(!homepageSearchResults||!n)return;if(!normalizeText(n.value))return void hideHomepageSearchResults();const t=e.slice(0,8);if(!t.length)return homepageSearchResults.innerHTML='\n      <div class="homepage-search-empty">\n        <strong>No matching firms found</strong>\n        <span>\n          Try a firm name, city, practice area or opportunity.\n        </span>\n      </div>\n    ',n.setAttribute("aria-expanded","true"),homepageSearchResults.hidden=!1,void window.requestAnimationFrame(positionHomepageSearchResults);const a=document.createDocumentFragment(),r=document.createElement("div");if(r.className="homepage-search-summary",r.textContent=1===e.length?"1 matching firm":`${e.length} matching firms`,a.appendChild(r),t.forEach(e=>{const n=document.createElement("a");n.className="homepage-search-result",n.href=getFirmProfileUrl(e),n.setAttribute("role","option");const t=document.createElement("strong");t.textContent=e.name||"Law firm";const r=document.createElement("span"),i=e.circle_classification||e.firm_type||"Law firm";r.textContent=`${i} · ${formatFirmLocation(e)}`,n.append(t,r),a.appendChild(n)}),e.length>t.length){const n=document.createElement("button");n.type="button",n.className="homepage-search-more",n.textContent=`View all ${e.length} matching firms`,n.addEventListener("click",()=>{hideHomepageSearchResults(),document.getElementById("firms-section")?.scrollIntoView({behavior:"smooth",block:"start"})}),a.appendChild(n)}homepageSearchResults.replaceChildren(a),homepageSearchResults.hidden=!1,window.requestAnimationFrame(positionHomepageSearchResults)}function hideHomepageSearchResults(){const e=document.getElementById("searchInput");e&&(e.setAttribute("aria-expanded","false"),e.removeAttribute("aria-activedescendant")),homepageSearchResults&&(homepageSearchResults.hidden=!0,homepageSearchResults.style.left="",homepageSearchResults.style.top="",homepageSearchResults.style.bottom="",homepageSearchResults.style.width="",homepageSearchResults.style.maxHeight="",delete homepageSearchResults.dataset.position)}function getFirmProfileUrl(e){return`firm-profile.html?id=${encodeURIComponent(e.id)}`}function openFirmProfile(e){window.location.href=getFirmProfileUrl(e)}function injectHomepageSearchStyles(){if(document.getElementById("homepageSearchStyles"))return;const e=document.createElement("style");e.id="homepageSearchStyles",e.textContent='\n    .homepage-search-enhanced {\n      position: relative;\n      z-index: 20;\n    }\n\n    .homepage-search-results {\n      position: fixed !important;\n      z-index: 2147483647 !important;\n      box-sizing: border-box;\n      overflow-x: hidden !important;\n      overflow-y: auto !important;\n      overscroll-behavior: contain;\n      scrollbar-gutter: stable;\n      border: 1px solid color-mix(in srgb, currentColor 18%, transparent);\n      border-radius: 1rem;\n      background: var(--surface, #ffffff);\n      box-shadow: 0 1.25rem 3rem rgba(20, 20, 30, 0.18);\n      color: var(--text, #17151c);\n      clip-path: none !important;\n      contain: none !important;\n      transform: none !important;\n    }\n\n    .homepage-search-results[data-position="above"] {\n      box-shadow: 0 -1.25rem 3rem rgba(20, 20, 30, 0.18);\n    }\n\n    .homepage-search-results[hidden] {\n      display: none;\n    }\n\n    .homepage-search-summary {\n      padding: 0.7rem 1rem;\n      border-bottom: 1px solid color-mix(in srgb, currentColor 10%, transparent);\n      font-size: 0.78rem;\n      font-weight: 700;\n      letter-spacing: 0.02em;\n      opacity: 0.68;\n    }\n\n    .homepage-search-result,\n    .homepage-search-more {\n      display: flex;\n      width: 100%;\n      box-sizing: border-box;\n      flex-direction: column;\n      gap: 0.2rem;\n      padding: 0.9rem 1rem;\n      border: 0;\n      border-bottom: 1px solid color-mix(in srgb, currentColor 10%, transparent);\n      background: transparent;\n      color: inherit;\n      font: inherit;\n      text-align: left;\n      text-decoration: none;\n      cursor: pointer;\n    }\n\n    .homepage-search-result:last-child,\n    .homepage-search-more:last-child {\n      border-bottom: 0;\n    }\n\n    .homepage-search-result:hover,\n    .homepage-search-result:focus-visible,\n    .homepage-search-more:hover,\n    .homepage-search-more:focus-visible {\n      outline: none;\n      background: color-mix(in srgb, currentColor 7%, transparent);\n    }\n\n    .homepage-search-result strong {\n      font-size: 0.98rem;\n    }\n\n    .homepage-search-result span,\n    .homepage-search-empty span {\n      font-size: 0.82rem;\n      opacity: 0.72;\n    }\n\n    .homepage-search-more {\n      align-items: center;\n      font-weight: 700;\n      color: var(--accent, #6f45c5);\n    }\n\n    .homepage-search-empty {\n      display: flex;\n      flex-direction: column;\n      gap: 0.25rem;\n      padding: 1rem;\n    }\n\n    [data-theme="dark"] .homepage-search-results {\n      background: var(--surface, #1d1a22);\n      color: var(--text, #f7f4fb);\n      box-shadow: 0 1.25rem 3rem rgba(0, 0, 0, 0.45);\n    }\n  ',document.head.appendChild(e)}function displayFirms(e){const n=document.getElementById("firms"),t=document.getElementById("firmCount");if(!n)return;if(updateFirmCount(t,e.length),!e.length)return void(n.innerHTML='\n      <div class="directory-empty">\n        <p>No matching firms found.</p>\n\n        <span>\n          Try a broader search or reset the filters.\n        </span>\n      </div>\n    ');const a=document.createDocumentFragment();e.forEach(e=>{a.appendChild(createFirmListItem(e))}),n.replaceChildren(a)}function createFirmListItem(e){const n=getFirmProfileUrl(e),t=e.circle_classification||e.firm_type||"Law firm",a=formatFirmLocation(e);return createHomepageProfileCard({name:e.name,url:n,description:`${t} · ${a}`,actionText:"View firm"})}function formatFirmLocation(e){const n=e.head_office_city?.trim(),t=e.head_office_country?.trim();return n&&t?`${n}, ${t}`:n||t||e.head_office||"United Kingdom"}function updateFirmCount(e,n){e&&(e.textContent=1===n?"1 firm":`${n} firms`)}async function loadHomepageChambers(){const e=document.getElementById("chambersPreview");if(!e)return;if(e.innerHTML='\n    <div class="directory-empty">\n      <p>Loading chambers…</p>\n      <span>Fetching verified chambers profiles.</span>\n    </div>\n  ',"undefined"==typeof client)return void(e.innerHTML='\n      <div class="directory-empty">\n        <p>Unable to load chambers</p>\n        <span>The database connection is not available.</span>\n      </div>\n    ');const{data:n,error:t}=await client.from("chambers").select("\n      organisation_id,\n      active\n    ").eq("active",!0);if(t)return console.error("Unable to load homepage chambers:",t),void(e.innerHTML='\n      <div class="directory-empty">\n        <p>Unable to load chambers</p>\n        <span>Please refresh the page and try again.</span>\n      </div>\n    ');const a=[...new Set((n||[]).map(e=>e.organisation_id).filter(Boolean))];if(!a.length)return void(e.innerHTML='\n      <div class="directory-empty">\n        <p>No chambers profiles available</p>\n        <span>Verified chambers will appear here automatically.</span>\n      </div>\n    ');const[r,i]=await Promise.all([client.from("legal_organisations").select("\n        id,\n        name,\n        slug,\n        logo_url,\n        organisation_type,\n        active\n      ").in("id",a).eq("organisation_type","barristers_chambers").eq("active",!0).order("name",{ascending:!0}),client.from("organisation_locations").select("\n        organisation_id,\n        city,\n        country\n      ").in("organisation_id",a).eq("active",!0)]);if(r.error)return console.error("Unable to load homepage chambers organisations:",r.error),void(e.innerHTML='\n      <div class="directory-empty">\n        <p>Unable to load chambers</p>\n        <span>Please refresh the page and try again.</span>\n      </div>\n    ');i.error&&console.warn("Unable to load homepage chambers locations:",i.error);const o=new Map;(i.data||[]).forEach(e=>{const n=String(e.organisation_id||"");if(!n||o.has(n))return;const t=e.city?.trim(),a=e.country?.trim(),r=t&&a?`${t}, ${a}`:t||a||"";r&&o.set(n,r)});const s=(r.data||[]).filter(e=>e?.id&&e?.name),c=document.getElementById("chambersCount");if(c&&(c.textContent=`${s.length} chambers`),!s.length)return void(e.innerHTML='\n      <div class="directory-empty">\n        <p>No chambers profiles available</p>\n        <span>Verified chambers will appear here automatically.</span>\n      </div>\n    ');const l=document.createDocumentFragment();s.forEach(e=>{l.appendChild(createHomepageChambersListItem(e,o.get(String(e.id))||""))}),e.replaceChildren(l)}function createHomepageChambersListItem(e,n){const t=`chamber-profile.html?id=${encodeURIComponent(e.id)}`,a=n?`Barristers’ chambers · ${n}`:"Barristers’ chambers";return createHomepageProfileCard({name:e.name,url:t,description:a,actionText:"View chambers"})}function createHomepageProfileCard({name:e,url:n,description:t,actionText:a}){const r=document.createElement("a");return r.className="firm-card",r.href=n,r.setAttribute("aria-label",`View ${e} profile`),r.innerHTML=`\n    <div class="firm-card-header">\n      <div class="firm-card-copy">\n        <h3>\n          ${escapeHtml(e)}\n        </h3>\n\n        <p class="firm-type">\n          ${escapeHtml(t)}\n        </p>\n      </div>\n    </div>\n\n    <span class="firm-link">\n      ${escapeHtml(a)}\n    </span>\n  `,r}async function loadUpcomingDeadlines(){const e=document.getElementById("deadlinePreviewList");if(!e)return;if("undefined"==typeof client)return void showDeadlineMessage(e,"Deadlines are temporarily unavailable.");e.innerHTML='\n    <div class="deadline-loading">\n      Loading upcoming deadlines…\n    </div>\n  ';const{data:n,error:t}=await client.from("career_opportunity_occurrences_public_view").select("\n      deadline_key,\n      provider_name,\n      provider_type,\n      career_pathway,\n      public_title,\n      opportunity_type_label,\n      closes_on,\n      public_application_status,\n      deadline_group,\n      cycle_application_url,\n      opportunity_application_url,\n      last_verified_on\n    ").eq("has_exact_application_deadline",!0).neq("deadline_group","passed").order("closes_on",{ascending:!0,nullsFirst:!1}).order("provider_name",{ascending:!0}).order("public_title",{ascending:!0}).limit(12);if(t)return console.error("Unable to load deadlines:",t),void showDeadlineMessage(e,"Upcoming dates are being refreshed.");const a=deduplicateDeadlines((n||[]).map(e=>({...e,opportunity_name:e.public_title,application_deadline:e.closes_on,application_status:e.public_application_status,application_url:e.cycle_application_url||e.opportunity_application_url,last_checked_on:e.last_verified_on}))).slice(0,5);if(!a.length)return void showDeadlineMessage(e,"New application deadlines will appear here as they are verified.");const r=document.createDocumentFragment();a.forEach(e=>{r.appendChild(createDeadlinePreviewRow(e))}),e.replaceChildren(r)}function deduplicateDeadlines(e){const n=new Map;return e.forEach(e=>{const t=e.deadline_key||[e.provider_name,e.opportunity_name,e.application_deadline].join("|");n.has(t)||n.set(t,e)}),Array.from(n.values())}function createDeadlinePreviewRow(e){const n=document.createElement("article");n.className="deadline-row";const t=e.provider_name||"Legal employer",a=e.opportunity_name||e.opportunity_type_label||"Opportunity",r=formatDate(e.application_deadline,!1),i=safeHttpUrl(e.application_url);return n.innerHTML=`\n    <div>\n      <strong>\n        ${escapeHtml(t)}\n      </strong>\n\n      <span>\n        ${escapeHtml(a)}\n      </span>\n    </div>\n\n    ${i?`\n          <a\n            class="small-link"\n            href="${escapeHtml(i)}"\n            target="_blank"\n            rel="noopener noreferrer"\n            aria-label="${escapeHtml(`${t}: ${a}, deadline ${r}`)}"\n          >\n            <time\n              datetime="${escapeHtml(e.application_deadline)}"\n            >\n              ${escapeHtml(r)}\n            </time>\n          </a>\n        `:`\n          <time\n            datetime="${escapeHtml(e.application_deadline)}"\n          >\n            ${escapeHtml(r)}\n          </time>\n        `}\n  `,n}function showDeadlineMessage(e,n){e.innerHTML=`\n    <article class="deadline-row">\n      <div>\n        <strong>\n          Dates being refreshed\n        </strong>\n\n        <span>\n          ${escapeHtml(n)}\n        </span>\n      </div>\n    </article>\n  `}function setFirmLoadingState(e,n){e.innerHTML='\n    <div\n      class="directory-empty"\n      role="status"\n    >\n      <p>Loading firms…</p>\n\n      <span>\n        Preparing the firm directory.\n      </span>\n    </div>\n  ',n&&(n.textContent="Loading firms…")}function showFirmLoadError(e,n,t){e.innerHTML=`\n    <div class="directory-empty">\n      <p>Firms could not be loaded.</p>\n\n      <span>\n        ${escapeHtml(t)}\n      </span>\n    </div>\n  `,n&&(n.textContent="Unable to load firms")}function debounce(e,n=180){let t;return(...a)=>{window.clearTimeout(t),t=window.setTimeout(()=>e(...a),n)}}function normalizeText(e){return String(e??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim()}function getTodayIsoDate(){const e=new Date,n=e.getTimezoneOffset();return new Date(e.getTime()-6e4*n).toISOString().slice(0,10)}function parseDateOnly(e){if(!e)return null;const n=new Date(`${e}T00:00:00`);return Number.isNaN(n.getTime())?null:n}function formatDate(e,n=!0){const t=parseDateOnly(e);return t?t.toLocaleDateString("en-GB",{day:"numeric",month:"short",...n?{year:"numeric"}:{}}):e||""}function safeHttpUrl(e){if(!e)return"";try{const n=new URL(e);return"http:"!==n.protocol&&"https:"!==n.protocol?"":n.href}catch{return""}}function escapeHtml(e){return String(e??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;")}document.addEventListener("DOMContentLoaded",()=>{createHomepageSearchResults(),bindHomepageControls(),initialiseHomepage()});
+window.__vacatoryHomepageAppLoaded = "search-results-page-v1";
+
+// =======================================
+// Vacatory
+// app.js: public homepage
+// =======================================
+
+let firms = [];
+
+let practiceAreasByFirm = new Map();
+let rolesByFirm = new Map();
+let searchTermsByFirm = new Map();
+
+let homepageSearchResults = null;
+let currentFilteredFirms = [];
+
+document.addEventListener("DOMContentLoaded", () => {
+  createHomepageSearchResults();
+  bindHomepageControls();
+  void initialiseHomepage();
+});
+
+async function initialiseHomepage() {
+  await Promise.all([
+    loadFirms(),
+    loadHomepageChambers(),
+    loadUpcomingDeadlines()
+  ]);
+}
+
+/* =======================================
+   Homepage controls
+======================================= */
+
+function bindHomepageControls() {
+  const searchInput =
+    document.getElementById("searchInput");
+
+  const filterPracticeArea =
+    document.getElementById("filterPracticeArea");
+
+  const filterRole =
+    document.getElementById("filterRole");
+
+  const filterFirmType =
+    document.getElementById("filterFirmType");
+
+  const filterReset =
+    document.getElementById("filterReset");
+
+  searchInput?.addEventListener(
+    "input",
+    debounce(() => {
+      const filtered = applyFilters();
+      renderHomepageSearchResults(filtered);
+    }, 120)
+  );
+
+  searchInput?.addEventListener(
+    "focus",
+    () => {
+      const query = normalizeText(searchInput.value);
+
+      if (query) {
+        renderHomepageSearchResults(
+          currentFilteredFirms
+        );
+      }
+    }
+  );
+
+  filterPracticeArea?.addEventListener(
+    "change",
+    applyFilters
+  );
+
+  filterRole?.addEventListener(
+    "change",
+    applyFilters
+  );
+
+  filterFirmType?.addEventListener(
+    "change",
+    applyFilters
+  );
+
+  filterReset?.addEventListener(
+    "click",
+    resetFilters
+  );
+
+  searchInput?.addEventListener(
+    "keydown",
+    event => {
+      if (event.key === "Escape") {
+        hideHomepageSearchResults();
+        searchInput.blur();
+        return;
+      }
+
+      if (event.key !== "Enter") {
+        return;
+      }
+
+      event.preventDefault();
+
+      const filtered = applyFilters();
+
+      const query =
+        searchInput.value.trim();
+
+      if (!query) {
+        return;
+      }
+
+      window.location.href =
+        `search-results.html?q=${
+          encodeURIComponent(query)
+        }`;
+    }
+  );
+
+  document.addEventListener(
+    "click",
+    event => {
+      const searchBox =
+        document.getElementById("firm-search");
+
+      if (
+        searchBox &&
+        !searchBox.contains(event.target)
+      ) {
+        hideHomepageSearchResults();
+      }
+    }
+  );
+}
+
+/* =======================================
+   Firms
+======================================= */
+
+async function loadFirms() {
+  const container =
+    document.getElementById("firms");
+
+  const count =
+    document.getElementById("firmCount");
+
+  if (!container) {
+    return;
+  }
+
+  setFirmLoadingState(container, count);
+
+  if (typeof client === "undefined") {
+    showFirmLoadError(
+      container,
+      count,
+      "The database connection is not available."
+    );
+
+    return;
+  }
+
+  const { data, error } = await client
+    .from("firms")
+    .select(`
+      id,
+      name,
+      short_name,
+      slug,
+      uk_rank,
+      firm_type,
+      circle_classification,
+      head_office,
+      head_office_city,
+      head_office_country,
+      active
+    `)
+    .eq("active", true)
+    .order("uk_rank", {
+      ascending: true,
+      nullsFirst: false
+    })
+    .order("name", {
+      ascending: true
+    });
+
+  if (error) {
+    console.error(
+      "Unable to load firms:",
+      error
+    );
+
+    showFirmLoadError(
+      container,
+      count,
+      "Unable to load firms at the moment."
+    );
+
+    return;
+  }
+
+  firms = data || [];
+
+  displayFirms(firms);
+
+  await loadDirectoryData();
+
+  populateFilterOptions();
+
+  const filtered =
+    applyFilters();
+
+  const searchInput =
+    document.getElementById("searchInput");
+
+  if (
+    searchInput &&
+    normalizeText(searchInput.value)
+  ) {
+    renderHomepageSearchResults(filtered);
+  }
+}
+
+async function loadDirectoryData() {
+  const firmIds =
+    firms.map(firm => firm.id);
+
+  practiceAreasByFirm = new Map();
+  rolesByFirm = new Map();
+  searchTermsByFirm = new Map();
+
+  if (!firmIds.length) {
+    return;
+  }
+
+  firmIds.forEach(firmId => {
+    searchTermsByFirm.set(
+      firmId,
+      new Set()
+    );
+  });
+
+  const results =
+    await Promise.allSettled([
+      client
+        .from("practice_areas")
+        .select(`
+          firm_id,
+          practice_area
+        `)
+        .in("firm_id", firmIds),
+
+      client
+        .from("firm_roles_public_view")
+        .select(`
+          firm_id,
+          role_name,
+          role_group,
+          student_relevance,
+          confirmed,
+          active
+        `)
+        .in("firm_id", firmIds)
+        .eq("active", true)
+        .eq("confirmed", true),
+
+      client
+        .from("locations")
+        .select(`
+          firm_id,
+          city,
+          country
+        `)
+        .in("firm_id", firmIds)
+        .eq("active", true),
+
+      client
+        .from("opportunity_cards_view")
+        .select(`
+          firm_id,
+          opportunity_name,
+          opportunity_type_label,
+          location_summary
+        `)
+        .in("firm_id", firmIds),
+
+      client
+        .from("training_contract_cards_view")
+        .select(`
+          firm_id,
+          programme_name,
+          programme_type_label,
+          location_summary
+        `)
+        .in("firm_id", firmIds)
+        .eq("active", true)
+    ]);
+
+  const [
+    practiceRows,
+    roleRows,
+    locationRows,
+    opportunityRows,
+    trainingRows
+  ] = results.map(getSettledQueryRows);
+
+  addPracticeAreaData(practiceRows);
+  addRoleData(roleRows);
+  addLocationSearchData(locationRows);
+  addOpportunitySearchData(opportunityRows);
+  addTrainingContractSearchData(trainingRows);
+}
+
+function getSettledQueryRows(result) {
+  if (result.status === "rejected") {
+    console.warn(
+      "Homepage supporting query failed:",
+      result.reason
+    );
+
+    return [];
+  }
+
+  if (result.value?.error) {
+    console.warn(
+      "Homepage supporting query failed:",
+      result.value.error
+    );
+
+    return [];
+  }
+
+  return result.value?.data || [];
+}
+
+function addPracticeAreaData(rows) {
+  rows.forEach(row => {
+    if (
+      !row.firm_id ||
+      !row.practice_area
+    ) {
+      return;
+    }
+
+    addToMapSet(
+      practiceAreasByFirm,
+      row.firm_id,
+      row.practice_area
+    );
+
+    addSearchTerm(
+      row.firm_id,
+      row.practice_area
+    );
+  });
+}
+
+function addRoleData(rows) {
+  const usefulRoleGroups = new Set([
+    "entry_route",
+    "legal_role",
+    "knowledge_innovation",
+    "business_services",
+    "qualification_status",
+    "programme"
+  ]);
+
+  rows.forEach(row => {
+    if (
+      !row.firm_id ||
+      !row.role_name
+    ) {
+      return;
+    }
+
+    const usefulForStudents =
+      usefulRoleGroups.has(row.role_group) ||
+      [
+        "primary",
+        "strong",
+        "context"
+      ].includes(row.student_relevance);
+
+    if (usefulForStudents) {
+      addToMapSet(
+        rolesByFirm,
+        row.firm_id,
+        row.role_name
+      );
+    }
+
+    addSearchTerm(
+      row.firm_id,
+      row.role_name
+    );
+  });
+}
+
+function addLocationSearchData(rows) {
+  rows.forEach(row => {
+    if (!row.firm_id) {
+      return;
+    }
+
+    addSearchTerm(
+      row.firm_id,
+      row.city
+    );
+
+    addSearchTerm(
+      row.firm_id,
+      row.country
+    );
+  });
+}
+
+function addOpportunitySearchData(rows) {
+  rows.forEach(row => {
+    if (!row.firm_id) {
+      return;
+    }
+
+    addSearchTerm(
+      row.firm_id,
+      row.opportunity_name
+    );
+
+    addSearchTerm(
+      row.firm_id,
+      row.opportunity_type_label
+    );
+
+    addSearchTerm(
+      row.firm_id,
+      row.location_summary
+    );
+  });
+}
+
+function addTrainingContractSearchData(rows) {
+  rows.forEach(row => {
+    if (!row.firm_id) {
+      return;
+    }
+
+    addSearchTerm(
+      row.firm_id,
+      row.programme_name
+    );
+
+    addSearchTerm(
+      row.firm_id,
+      row.programme_type_label
+    );
+
+    addSearchTerm(
+      row.firm_id,
+      row.location_summary
+    );
+  });
+}
+
+function addToMapSet(map, key, value) {
+  if (!value) {
+    return;
+  }
+
+  if (!map.has(key)) {
+    map.set(
+      key,
+      new Set()
+    );
+  }
+
+  map.get(key).add(value);
+}
+
+function addSearchTerm(firmId, value) {
+  if (
+    !firmId ||
+    !value
+  ) {
+    return;
+  }
+
+  if (!searchTermsByFirm.has(firmId)) {
+    searchTermsByFirm.set(
+      firmId,
+      new Set()
+    );
+  }
+
+  searchTermsByFirm
+    .get(firmId)
+    .add(String(value));
+}
+
+/* =======================================
+   Firm filters
+======================================= */
+
+function populateFilterOptions() {
+  const allPracticeAreas =
+    new Set();
+
+  const allRoles =
+    new Set();
+
+  const allFirmTypes =
+    new Set();
+
+  practiceAreasByFirm.forEach(values => {
+    values.forEach(value => {
+      allPracticeAreas.add(value);
+    });
+  });
+
+  rolesByFirm.forEach(values => {
+    values.forEach(value => {
+      allRoles.add(value);
+    });
+  });
+
+  firms.forEach(firm => {
+    if (firm.firm_type) {
+      allFirmTypes.add(
+        firm.firm_type
+      );
+    }
+  });
+
+  fillSelect(
+    "filterPracticeArea",
+    allPracticeAreas,
+    "All practice areas"
+  );
+
+  fillSelect(
+    "filterRole",
+    allRoles,
+    "All roles"
+  );
+
+  fillSelect(
+    "filterFirmType",
+    allFirmTypes,
+    "All firm types"
+  );
+}
+
+function fillSelect(
+  id,
+  valuesSet,
+  placeholderText
+) {
+  const select =
+    document.getElementById(id);
+
+  if (!select) {
+    return;
+  }
+
+  const currentValue =
+    select.value;
+
+  const fragment =
+    document.createDocumentFragment();
+
+  const placeholder =
+    document.createElement("option");
+
+  placeholder.value = "";
+  placeholder.textContent =
+    placeholderText;
+
+  fragment.appendChild(
+    placeholder
+  );
+
+  Array.from(valuesSet)
+    .filter(Boolean)
+    .sort((a, b) => {
+      return a.localeCompare(
+        b,
+        "en-GB"
+      );
+    })
+    .forEach(value => {
+      const option =
+        document.createElement("option");
+
+      option.value = value;
+      option.textContent = value;
+
+      fragment.appendChild(
+        option
+      );
+    });
+
+  select.replaceChildren(
+    fragment
+  );
+
+  const valueStillExists =
+    Array.from(select.options)
+      .some(option => {
+        return option.value ===
+          currentValue;
+      });
+
+  if (valueStillExists) {
+    select.value =
+      currentValue;
+  }
+}
+
+function applyFilters() {
+  const search =
+    normalizeText(
+      document
+        .getElementById("searchInput")
+        ?.value || ""
+    );
+
+  const practiceArea =
+    document
+      .getElementById("filterPracticeArea")
+      ?.value || "";
+
+  const role =
+    document
+      .getElementById("filterRole")
+      ?.value || "";
+
+  const firmType =
+    document
+      .getElementById("filterFirmType")
+      ?.value || "";
+
+  const filterReset =
+    document.getElementById(
+      "filterReset"
+    );
+
+  const filtered =
+    firms.filter(firm => {
+      const firmPracticeAreas =
+        practiceAreasByFirm.get(firm.id) ||
+        new Set();
+
+      const firmRoles =
+        rolesByFirm.get(firm.id) ||
+        new Set();
+
+      const extraTerms =
+        searchTermsByFirm.get(firm.id) ||
+        new Set();
+
+      const searchableText =
+        normalizeText(
+          [
+            firm.name,
+            firm.short_name,
+            firm.firm_type,
+            firm.circle_classification,
+            firm.head_office,
+            firm.head_office_city,
+            firm.head_office_country,
+            firm.uk_rank,
+            ...extraTerms
+          ]
+            .filter(Boolean)
+            .join(" ")
+        );
+
+      const matchesSearch =
+        !search ||
+        searchableText.includes(search);
+
+      const matchesPracticeArea =
+        !practiceArea ||
+        firmPracticeAreas.has(
+          practiceArea
+        );
+
+      const matchesRole =
+        !role ||
+        firmRoles.has(role);
+
+      const matchesFirmType =
+        !firmType ||
+        firm.firm_type === firmType;
+
+      return (
+        matchesSearch &&
+        matchesPracticeArea &&
+        matchesRole &&
+        matchesFirmType
+      );
+    });
+
+  const anyFilterActive =
+    Boolean(
+      search ||
+      practiceArea ||
+      role ||
+      firmType
+    );
+
+  filterReset?.classList.toggle(
+    "hidden",
+    !anyFilterActive
+  );
+
+  currentFilteredFirms = filtered;
+  displayFirms(filtered);
+
+  return filtered;
+}
+
+function resetFilters() {
+  const searchInput =
+    document.getElementById(
+      "searchInput"
+    );
+
+  const filterPracticeArea =
+    document.getElementById(
+      "filterPracticeArea"
+    );
+
+  const filterRole =
+    document.getElementById(
+      "filterRole"
+    );
+
+  const filterFirmType =
+    document.getElementById(
+      "filterFirmType"
+    );
+
+  if (searchInput) {
+    searchInput.value = "";
+  }
+
+  if (filterPracticeArea) {
+    filterPracticeArea.value = "";
+  }
+
+  if (filterRole) {
+    filterRole.value = "";
+  }
+
+  if (filterFirmType) {
+    filterFirmType.value = "";
+  }
+
+  applyFilters();
+  hideHomepageSearchResults();
+  searchInput?.focus();
+}
+
+/* =======================================
+   Hero search results
+======================================= */
+
+function createHomepageSearchResults() {
+  const searchBox =
+    document.getElementById("firm-search");
+
+  const input =
+    document.getElementById("searchInput");
+
+  if (!searchBox || !input) {
+    return;
+  }
+
+  input.setAttribute("role", "combobox");
+  input.setAttribute("aria-autocomplete", "list");
+  input.setAttribute(
+    "aria-controls",
+    "homepageSearchResults"
+  );
+  input.setAttribute("aria-expanded", "false");
+
+  searchBox.classList.add(
+    "homepage-search-enhanced"
+  );
+
+  homepageSearchResults =
+    document.createElement("div");
+
+  homepageSearchResults.id =
+    "homepageSearchResults";
+
+  homepageSearchResults.className =
+    "homepage-search-results";
+
+  homepageSearchResults.setAttribute(
+    "role",
+    "listbox"
+  );
+
+  homepageSearchResults.setAttribute(
+    "aria-label",
+    "Firm search results"
+  );
+
+  homepageSearchResults.hidden = true;
+
+  document.body.appendChild(
+    homepageSearchResults
+  );
+
+  injectHomepageSearchStyles();
+
+  window.addEventListener(
+    "resize",
+    positionHomepageSearchResults
+  );
+
+  window.addEventListener(
+    "scroll",
+    positionHomepageSearchResults,
+    true
+  );
+}
+
+function positionHomepageSearchResults() {
+  const input =
+    document.getElementById("searchInput");
+
+  if (
+    !homepageSearchResults ||
+    !input ||
+    homepageSearchResults.hidden
+  ) {
+    return;
+  }
+
+  const rect =
+    input.getBoundingClientRect();
+
+  const gap = 8;
+  const viewportPadding = 12;
+  const maximumPanelHeight = 420;
+
+  const availableBelow =
+    Math.max(
+      0,
+      window.innerHeight -
+        rect.bottom -
+        gap -
+        viewportPadding
+    );
+
+  const availableAbove =
+    Math.max(
+      0,
+      rect.top -
+        gap -
+        viewportPadding
+    );
+
+  const naturalHeight =
+    Math.min(
+      maximumPanelHeight,
+      homepageSearchResults.scrollHeight
+    );
+
+  const minimumUsefulSpace = 180;
+
+  const openAbove =
+    availableBelow < minimumUsefulSpace &&
+    availableAbove > availableBelow;
+
+  const availableSpace =
+    openAbove
+      ? availableAbove
+      : availableBelow;
+
+  const panelHeight =
+    Math.max(
+      0,
+      Math.min(
+        naturalHeight,
+        maximumPanelHeight,
+        availableSpace
+      )
+    );
+
+  const left =
+    Math.max(
+      viewportPadding,
+      Math.min(
+        rect.left,
+        window.innerWidth -
+          rect.width -
+          viewportPadding
+      )
+    );
+
+  const width =
+    Math.min(
+      rect.width,
+      window.innerWidth -
+        viewportPadding * 2
+    );
+
+  homepageSearchResults.style.left =
+    `${left}px`;
+
+  homepageSearchResults.style.width =
+    `${width}px`;
+
+  homepageSearchResults.style.maxHeight =
+    `${panelHeight}px`;
+
+  homepageSearchResults.dataset.position =
+    openAbove
+      ? "above"
+      : "below";
+
+  if (openAbove) {
+    homepageSearchResults.style.top = "";
+    homepageSearchResults.style.bottom =
+      `${window.innerHeight - rect.top + gap}px`;
+  } else {
+    homepageSearchResults.style.bottom = "";
+    homepageSearchResults.style.top =
+      `${rect.bottom + gap}px`;
+  }
+}
+
+function renderHomepageSearchResults(list) {
+  const input =
+    document.getElementById("searchInput");
+
+  if (
+    !homepageSearchResults ||
+    !input
+  ) {
+    return;
+  }
+
+  const query =
+    normalizeText(input.value);
+
+  if (!query) {
+    hideHomepageSearchResults();
+    return;
+  }
+
+  const matches =
+    list.slice(0, 8);
+
+  if (!matches.length) {
+    homepageSearchResults.innerHTML = `
+      <div class="homepage-search-empty">
+        <strong>No matching firms found</strong>
+        <span>
+          Try a firm name, city, practice area or opportunity.
+        </span>
+      </div>
+    `;
+
+    input.setAttribute("aria-expanded", "true");
+
+    homepageSearchResults.hidden = false;
+
+    window.requestAnimationFrame(
+      positionHomepageSearchResults
+    );
+
+    return;
+  }
+
+  const fragment =
+    document.createDocumentFragment();
+
+  const summary =
+    document.createElement("div");
+
+  summary.className =
+    "homepage-search-summary";
+
+  summary.textContent =
+    list.length === 1
+      ? "1 matching firm"
+      : `${list.length} matching firms`;
+
+  fragment.appendChild(summary);
+
+  matches.forEach(firm => {
+    const link =
+      document.createElement("a");
+
+    link.className =
+      "homepage-search-result";
+
+    link.href =
+      getFirmProfileUrl(firm);
+
+    link.setAttribute(
+      "role",
+      "option"
+    );
+
+    const title =
+      document.createElement("strong");
+
+    title.textContent =
+      firm.name || "Law firm";
+
+    const details =
+      document.createElement("span");
+
+    const firmType =
+      firm.circle_classification ||
+      firm.firm_type ||
+      "Law firm";
+
+    details.textContent =
+      `${firmType} · ${formatFirmLocation(firm)}`;
+
+    link.append(
+      title,
+      details
+    );
+
+    fragment.appendChild(link);
+  });
+
+  if (list.length > matches.length) {
+    const more =
+      document.createElement("button");
+
+    more.type = "button";
+    more.className =
+      "homepage-search-more";
+
+    more.textContent =
+      `View all ${list.length} matching firms`;
+
+    more.addEventListener(
+      "click",
+      () => {
+        hideHomepageSearchResults();
+
+        document
+          .getElementById("firms-section")
+          ?.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+          });
+      }
+    );
+
+    fragment.appendChild(more);
+  }
+
+  homepageSearchResults.replaceChildren(
+    fragment
+  );
+
+  homepageSearchResults.hidden = false;
+
+  window.requestAnimationFrame(
+    positionHomepageSearchResults
+  );
+}
+
+function hideHomepageSearchResults() {
+  const input =
+    document.getElementById("searchInput");
+
+  if (input) {
+    input.setAttribute("aria-expanded", "false");
+    input.removeAttribute("aria-activedescendant");
+  }
+
+  if (homepageSearchResults) {
+    homepageSearchResults.hidden = true;
+    homepageSearchResults.style.left = "";
+    homepageSearchResults.style.top = "";
+    homepageSearchResults.style.bottom = "";
+    homepageSearchResults.style.width = "";
+    homepageSearchResults.style.maxHeight = "";
+    delete homepageSearchResults.dataset.position;
+  }
+}
+
+function getFirmProfileUrl(firm) {
+  return `firm-profile.html?id=${
+    encodeURIComponent(firm.id)
+  }`;
+}
+
+function openFirmProfile(firm) {
+  window.location.href =
+    getFirmProfileUrl(firm);
+}
+
+function injectHomepageSearchStyles() {
+  if (
+    document.getElementById(
+      "homepageSearchStyles"
+    )
+  ) {
+    return;
+  }
+
+  const style =
+    document.createElement("style");
+
+  style.id =
+    "homepageSearchStyles";
+
+  style.textContent = `
+    .homepage-search-enhanced {
+      position: relative;
+      z-index: 20;
+    }
+
+    .homepage-search-results {
+      position: fixed !important;
+      z-index: 2147483647 !important;
+      box-sizing: border-box;
+      overflow-x: hidden !important;
+      overflow-y: auto !important;
+      overscroll-behavior: contain;
+      scrollbar-gutter: stable;
+      border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+      border-radius: 1rem;
+      background: var(--surface, #ffffff);
+      box-shadow: 0 1.25rem 3rem rgba(20, 20, 30, 0.18);
+      color: var(--text, #17151c);
+      clip-path: none !important;
+      contain: none !important;
+      transform: none !important;
+    }
+
+    .homepage-search-results[data-position="above"] {
+      box-shadow: 0 -1.25rem 3rem rgba(20, 20, 30, 0.18);
+    }
+
+    .homepage-search-results[hidden] {
+      display: none;
+    }
+
+    .homepage-search-summary {
+      padding: 0.7rem 1rem;
+      border-bottom: 1px solid color-mix(in srgb, currentColor 10%, transparent);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      opacity: 0.68;
+    }
+
+    .homepage-search-result,
+    .homepage-search-more {
+      display: flex;
+      width: 100%;
+      box-sizing: border-box;
+      flex-direction: column;
+      gap: 0.2rem;
+      padding: 0.9rem 1rem;
+      border: 0;
+      border-bottom: 1px solid color-mix(in srgb, currentColor 10%, transparent);
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      text-align: left;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .homepage-search-result:last-child,
+    .homepage-search-more:last-child {
+      border-bottom: 0;
+    }
+
+    .homepage-search-result:hover,
+    .homepage-search-result:focus-visible,
+    .homepage-search-more:hover,
+    .homepage-search-more:focus-visible {
+      outline: none;
+      background: color-mix(in srgb, currentColor 7%, transparent);
+    }
+
+    .homepage-search-result strong {
+      font-size: 0.98rem;
+    }
+
+    .homepage-search-result span,
+    .homepage-search-empty span {
+      font-size: 0.82rem;
+      opacity: 0.72;
+    }
+
+    .homepage-search-more {
+      align-items: center;
+      font-weight: 700;
+      color: var(--accent, #6f45c5);
+    }
+
+    .homepage-search-empty {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      padding: 1rem;
+    }
+
+    [data-theme="dark"] .homepage-search-results {
+      background: var(--surface, #1d1a22);
+      color: var(--text, #f7f4fb);
+      box-shadow: 0 1.25rem 3rem rgba(0, 0, 0, 0.45);
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+/* =======================================
+   Firm preview rendering
+======================================= */
+
+function displayFirms(list) {
+  const container =
+    document.getElementById("firms");
+
+  const count =
+    document.getElementById("firmCount");
+
+  if (!container) {
+    return;
+  }
+
+  updateFirmCount(
+    count,
+    list.length
+  );
+
+  if (!list.length) {
+    container.innerHTML = `
+      <div class="directory-empty">
+        <p>No matching firms found.</p>
+
+        <span>
+          Try a broader search or reset the filters.
+        </span>
+      </div>
+    `;
+
+    return;
+  }
+
+  const fragment =
+    document.createDocumentFragment();
+
+  list.forEach(firm => {
+    fragment.appendChild(
+      createFirmListItem(firm)
+    );
+  });
+
+  container.replaceChildren(
+    fragment
+  );
+}
+
+function createFirmListItem(firm) {
+  const firmUrl =
+    getFirmProfileUrl(firm);
+
+  const firmType =
+    firm.circle_classification ||
+    firm.firm_type ||
+    "Law firm";
+
+  const location =
+    formatFirmLocation(firm);
+
+  return createHomepageProfileCard({
+    name: firm.name,
+    url: firmUrl,
+    description: `${firmType} · ${location}`,
+    actionText: "View firm"
+  });
+}
+function formatFirmLocation(firm) {
+  const city =
+    firm.head_office_city?.trim();
+
+  const country =
+    firm.head_office_country?.trim();
+
+  if (
+    city &&
+    country
+  ) {
+    return `${city}, ${country}`;
+  }
+
+  if (city) {
+    return city;
+  }
+
+  if (country) {
+    return country;
+  }
+
+  return (
+    firm.head_office ||
+    "United Kingdom"
+  );
+}
+
+function updateFirmCount(
+  element,
+  total
+) {
+  if (!element) {
+    return;
+  }
+
+  element.textContent =
+    total === 1
+      ? "1 firm"
+      : `${total} firms`;
+}
+
+/* =======================================
+   Chambers homepage preview
+======================================= */
+
+async function loadHomepageChambers() {
+  const container =
+    document.getElementById("chambersPreview");
+
+  if (!container) {
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="directory-empty">
+      <p>Loading chambers…</p>
+      <span>Fetching verified chambers profiles.</span>
+    </div>
+  `;
+
+  if (typeof client === "undefined") {
+    container.innerHTML = `
+      <div class="directory-empty">
+        <p>Unable to load chambers</p>
+        <span>The database connection is not available.</span>
+      </div>
+    `;
+    return;
+  }
+
+  const {
+    data: chamberRows,
+    error: chamberError
+  } = await client
+    .from("chambers")
+    .select(`
+      organisation_id,
+      active
+    `)
+    .eq("active", true);
+
+  if (chamberError) {
+    console.error(
+      "Unable to load homepage chambers:",
+      chamberError
+    );
+
+    container.innerHTML = `
+      <div class="directory-empty">
+        <p>Unable to load chambers</p>
+        <span>Please refresh the page and try again.</span>
+      </div>
+    `;
+    return;
+  }
+
+  const organisationIds = [
+    ...new Set(
+      (chamberRows || [])
+        .map(row => row.organisation_id)
+        .filter(Boolean)
+    )
+  ];
+
+  if (!organisationIds.length) {
+    container.innerHTML = `
+      <div class="directory-empty">
+        <p>No chambers profiles available</p>
+        <span>Verified chambers will appear here automatically.</span>
+      </div>
+    `;
+    return;
+  }
+
+  const [
+    organisationResult,
+    locationResult
+  ] = await Promise.all([
+    client
+      .from("legal_organisations")
+      .select(`
+        id,
+        name,
+        slug,
+        logo_url,
+        organisation_type,
+        active
+      `)
+      .in("id", organisationIds)
+      .eq(
+        "organisation_type",
+        "barristers_chambers"
+      )
+      .eq("active", true)
+      .order("name", {
+        ascending: true
+      }),
+
+    client
+      .from("organisation_locations")
+      .select(`
+        organisation_id,
+        city,
+        country
+      `)
+      .in("organisation_id", organisationIds)
+      .eq("active", true)
+  ]);
+
+  if (organisationResult.error) {
+    console.error(
+      "Unable to load homepage chambers organisations:",
+      organisationResult.error
+    );
+
+    container.innerHTML = `
+      <div class="directory-empty">
+        <p>Unable to load chambers</p>
+        <span>Please refresh the page and try again.</span>
+      </div>
+    `;
+    return;
+  }
+
+  if (locationResult.error) {
+    console.warn(
+      "Unable to load homepage chambers locations:",
+      locationResult.error
+    );
+  }
+
+  const locationsByOrganisation =
+    new Map();
+
+  (locationResult.data || []).forEach(row => {
+    const key =
+      String(row.organisation_id || "");
+
+    if (
+      !key ||
+      locationsByOrganisation.has(key)
+    ) {
+      return;
+    }
+
+    const city =
+      row.city?.trim();
+
+    const country =
+      row.country?.trim();
+
+    const location =
+      city && country
+        ? `${city}, ${country}`
+        : city || country || "";
+
+    if (location) {
+      locationsByOrganisation.set(
+        key,
+        location
+      );
+    }
+  });
+
+  const chambers =
+    (organisationResult.data || [])
+      .filter(row => row?.id && row?.name);
+
+  const chambersCount =
+    document.getElementById("chambersCount");
+
+  if (chambersCount) {
+    chambersCount.textContent =
+      `${chambers.length} chambers`;
+  }
+
+  if (!chambers.length) {
+    container.innerHTML = `
+      <div class="directory-empty">
+        <p>No chambers profiles available</p>
+        <span>Verified chambers will appear here automatically.</span>
+      </div>
+    `;
+    return;
+  }
+
+  const fragment =
+    document.createDocumentFragment();
+
+  chambers.forEach(chambersRow => {
+    fragment.appendChild(
+      createHomepageChambersListItem(
+        chambersRow,
+        locationsByOrganisation.get(
+          String(chambersRow.id)
+        ) || ""
+      )
+    );
+  });
+
+  container.replaceChildren(fragment);
+}
+
+function createHomepageChambersListItem(
+  chambers,
+  location
+) {
+  const chambersUrl =
+    `chamber-profile.html?id=${encodeURIComponent(
+      chambers.id
+    )}`;
+
+  const typeAndLocation =
+    location
+      ? `Barristers’ chambers · ${location}`
+      : "Barristers’ chambers";
+
+  return createHomepageProfileCard({
+    name: chambers.name,
+    url: chambersUrl,
+    description: typeAndLocation,
+    actionText: "View chambers"
+  });
+}
+
+function createHomepageProfileCard({
+  name,
+  url,
+  description,
+  actionText
+}) {
+  const card =
+    document.createElement("a");
+
+  card.className = "firm-card";
+  card.href = url;
+
+  card.setAttribute(
+    "aria-label",
+    `View ${name} profile`
+  );
+
+  card.innerHTML = `
+    <div class="firm-card-header">
+      <div class="firm-card-copy">
+        <h3>
+          ${escapeHtml(name)}
+        </h3>
+
+        <p class="firm-type">
+          ${escapeHtml(description)}
+        </p>
+      </div>
+    </div>
+
+    <span class="firm-link">
+      ${escapeHtml(actionText)}
+    </span>
+  `;
+
+  return card;
+}
+
+
+/* =======================================
+   Unified deadline preview
+======================================= */
+
+async function loadUpcomingDeadlines() {
+  const deadlineList =
+    document.getElementById(
+      "deadlinePreviewList"
+    );
+
+  if (!deadlineList) {
+    return;
+  }
+
+  if (typeof client === "undefined") {
+    showDeadlineMessage(
+      deadlineList,
+      "Deadlines are temporarily unavailable."
+    );
+
+    return;
+  }
+
+  deadlineList.innerHTML = `
+    <div class="deadline-loading">
+      Loading upcoming deadlines…
+    </div>
+  `;
+
+  const { data, error } = await client
+    .from("career_opportunity_occurrences_public_view")
+    .select(`
+      deadline_key,
+      provider_name,
+      provider_type,
+      career_pathway,
+      public_title,
+      opportunity_type_label,
+      closes_on,
+      public_application_status,
+      deadline_group,
+      cycle_application_url,
+      opportunity_application_url,
+      last_verified_on
+    `)
+    .eq("has_exact_application_deadline", true)
+    .neq("deadline_group", "passed")
+    .order(
+      "closes_on",
+      {
+        ascending: true,
+        nullsFirst: false
+      }
+    )
+    .order("provider_name", { ascending: true })
+    .order("public_title", { ascending: true })
+    .limit(12);
+
+  if (error) {
+    console.error(
+      "Unable to load deadlines:",
+      error
+    );
+
+    showDeadlineMessage(
+      deadlineList,
+      "Upcoming dates are being refreshed."
+    );
+
+    return;
+  }
+
+  const canonicalRows = (data || []).map(row => ({
+    ...row,
+    opportunity_name: row.public_title,
+    application_deadline: row.closes_on,
+    application_status: row.public_application_status,
+    application_url:
+      row.cycle_application_url ||
+      row.opportunity_application_url,
+    last_checked_on: row.last_verified_on
+  }));
+
+  const rows =
+    deduplicateDeadlines(canonicalRows)
+      .slice(0, 5);
+
+  if (!rows.length) {
+    showDeadlineMessage(
+      deadlineList,
+      "New application deadlines will appear here as they are verified."
+    );
+
+    return;
+  }
+
+  const fragment =
+    document.createDocumentFragment();
+
+  rows.forEach(row => {
+    fragment.appendChild(
+      createDeadlinePreviewRow(row)
+    );
+  });
+
+  deadlineList.replaceChildren(
+    fragment
+  );
+}
+
+function deduplicateDeadlines(rows) {
+  const unique =
+    new Map();
+
+  rows.forEach(row => {
+    const key =
+      row.deadline_key ||
+      [
+        row.provider_name,
+        row.opportunity_name,
+        row.application_deadline
+      ].join("|");
+
+    if (!unique.has(key)) {
+      unique.set(key, row);
+    }
+  });
+
+  return Array.from(
+    unique.values()
+  );
+}
+
+function createDeadlinePreviewRow(row) {
+  const article =
+    document.createElement("article");
+
+  article.className =
+    "deadline-row";
+
+  const providerName =
+    row.provider_name ||
+    "Legal employer";
+
+  const opportunityName =
+    row.opportunity_name ||
+    row.opportunity_type_label ||
+    "Opportunity";
+
+  const dateLabel =
+    formatDate(
+      row.application_deadline,
+      false
+    );
+
+  const applicationUrl =
+    safeHttpUrl(
+      row.application_url
+    );
+
+  article.innerHTML = `
+    <div>
+      <strong>
+        ${escapeHtml(providerName)}
+      </strong>
+
+      <span>
+        ${escapeHtml(opportunityName)}
+      </span>
+    </div>
+
+    ${
+      applicationUrl
+        ? `
+          <a
+            class="small-link"
+            href="${escapeHtml(applicationUrl)}"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="${
+              escapeHtml(
+                `${providerName}: ${opportunityName}, deadline ${dateLabel}`
+              )
+            }"
+          >
+            <time
+              datetime="${
+                escapeHtml(
+                  row.application_deadline
+                )
+              }"
+            >
+              ${escapeHtml(dateLabel)}
+            </time>
+          </a>
+        `
+        : `
+          <time
+            datetime="${
+              escapeHtml(
+                row.application_deadline
+              )
+            }"
+          >
+            ${escapeHtml(dateLabel)}
+          </time>
+        `
+    }
+  `;
+
+  return article;
+}
+
+function showDeadlineMessage(
+  container,
+  message
+) {
+  container.innerHTML = `
+    <article class="deadline-row">
+      <div>
+        <strong>
+          Dates being refreshed
+        </strong>
+
+        <span>
+          ${escapeHtml(message)}
+        </span>
+      </div>
+    </article>
+  `;
+}
+
+/* =======================================
+   Loading and error states
+======================================= */
+
+function setFirmLoadingState(
+  container,
+  count
+) {
+  container.innerHTML = `
+    <div
+      class="directory-empty"
+      role="status"
+    >
+      <p>Loading firms…</p>
+
+      <span>
+        Preparing the firm directory.
+      </span>
+    </div>
+  `;
+
+  if (count) {
+    count.textContent =
+      "Loading firms…";
+  }
+}
+
+function showFirmLoadError(
+  container,
+  count,
+  message
+) {
+  container.innerHTML = `
+    <div class="directory-empty">
+      <p>Firms could not be loaded.</p>
+
+      <span>
+        ${escapeHtml(message)}
+      </span>
+    </div>
+  `;
+
+  if (count) {
+    count.textContent =
+      "Unable to load firms";
+  }
+}
+
+/* =======================================
+   Utilities
+======================================= */
+
+function debounce(
+  callback,
+  delay = 180
+) {
+  let timer;
+
+  return (...args) => {
+    window.clearTimeout(timer);
+
+    timer = window.setTimeout(
+      () => callback(...args),
+      delay
+    );
+  };
+}
+
+function normalizeText(value) {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(
+      /[\u0300-\u036f]/g,
+      ""
+    )
+    .toLowerCase()
+    .trim();
+}
+
+function getTodayIsoDate() {
+  const now =
+    new Date();
+
+  const offset =
+    now.getTimezoneOffset();
+
+  const localDate =
+    new Date(
+      now.getTime() -
+      offset * 60_000
+    );
+
+  return localDate
+    .toISOString()
+    .slice(0, 10);
+}
+
+function parseDateOnly(value) {
+  if (!value) {
+    return null;
+  }
+
+  const date =
+    new Date(
+      `${value}T00:00:00`
+    );
+
+  return Number.isNaN(
+    date.getTime()
+  )
+    ? null
+    : date;
+}
+
+function formatDate(
+  value,
+  includeYear = true
+) {
+  const date =
+    parseDateOnly(value);
+
+  if (!date) {
+    return value || "";
+  }
+
+  return date.toLocaleDateString(
+    "en-GB",
+    {
+      day: "numeric",
+      month: "short",
+      ...(includeYear
+        ? { year: "numeric" }
+        : {})
+    }
+  );
+}
+
+function safeHttpUrl(value) {
+  if (!value) {
+    return "";
+  }
+
+  try {
+    const url =
+      new URL(value);
+
+    if (
+      url.protocol !== "http:" &&
+      url.protocol !== "https:"
+    ) {
+      return "";
+    }
+
+    return url.href;
+  } catch {
+    return "";
+  }
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}

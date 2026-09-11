@@ -1,1 +1,1226 @@
-const chambersDirectoryState={chambers:[],filteredChambers:[],chambersByOrganisationId:new Map},chambersDirectoryElements={};async function initialiseChambersDirectory(){if(cacheChambersDirectoryElements(),connectChambersDirectoryFilters(),"undefined"==typeof client)return console.error("The Supabase client is unavailable."),void showChambersDirectoryError();try{const e=await loadChamberRows();chambersDirectoryState.chambers=e.map(normaliseChambers).filter(e=>e.organisation_id&&getChambersName(e)&&!1!==e.active&&!1!==e.organisation_active),buildChambersMap(),await loadSupportingChambersData(),populateChambersFilterOptions(),applyChambersFilters(),chambersDirectoryElements.loading?.classList.add("hidden")}catch(e){console.error("Unable to load chambers:",e),showChambersDirectoryError()}}async function loadChamberRows(){const{data:e,error:r}=await client.from("chambers").select("*").eq("active",!0);if(r)throw r;const t=(e||[]).filter(e=>e?.organisation_id);if(!t.length)return[];const a=t.map(e=>e.organisation_id),{data:n,error:i}=await client.from("legal_organisations").select("*").in("id",a).eq("organisation_type","barristers_chambers").eq("active",!0);if(i)throw i;const s=new Map((n||[]).map(e=>[String(e.id),e]));return t.map(e=>{const r=s.get(String(e.organisation_id));return r?{...e,...r,organisation_id:e.organisation_id,chamber_active:e.active,organisation_active:r.active,chamber_profile_status:e.profile_status,organisation_profile_status:r.profile_status,chamber_research_status:e.research_status,organisation_research_status:r.research_status}:null}).filter(Boolean)}function cacheChambersDirectoryElements(){chambersDirectoryElements.search=document.getElementById("directorySearch"),chambersDirectoryElements.sort=document.getElementById("sortFilter"),chambersDirectoryElements.location=document.getElementById("locationFilter"),chambersDirectoryElements.circuit=document.getElementById("circuitFilter"),chambersDirectoryElements.practice=document.getElementById("practiceFilter"),chambersDirectoryElements.opportunity=document.getElementById("opportunityFilter"),chambersDirectoryElements.clear=document.getElementById("clearFilters"),chambersDirectoryElements.count=document.getElementById("directoryCount"),chambersDirectoryElements.loading=document.getElementById("directoryLoading"),chambersDirectoryElements.error=document.getElementById("directoryError"),chambersDirectoryElements.empty=document.getElementById("directoryEmpty"),chambersDirectoryElements.list=document.getElementById("chambersDirectory")}function connectChambersDirectoryFilters(){chambersDirectoryElements.search?.addEventListener("input",applyChambersFilters),chambersDirectoryElements.sort?.addEventListener("change",applyChambersFilters),chambersDirectoryElements.location?.addEventListener("change",applyChambersFilters),chambersDirectoryElements.circuit?.addEventListener("change",applyChambersFilters),chambersDirectoryElements.practice?.addEventListener("change",applyChambersFilters),chambersDirectoryElements.opportunity?.addEventListener("change",applyChambersFilters),chambersDirectoryElements.clear?.addEventListener("click",clearChambersFilters)}function normaliseChambers(e){return{...e,locations:[],circuits:[],practiceAreas:[],opportunities:[],rankings:[]}}function getChambersName(e){return e.name||e.short_name||""}function buildChambersMap(){chambersDirectoryState.chambersByOrganisationId.clear(),chambersDirectoryState.chambers.forEach(e=>{chambersDirectoryState.chambersByOrganisationId.set(String(e.organisation_id),e)})}async function loadSupportingChambersData(){const e=chambersDirectoryState.chambers.map(e=>e.organisation_id);if(!e.length)return;const[r,t,a,n]=await Promise.all([readRowsForOrganisations("organisation_locations",e,e=>e.eq("active",!0)),readRowsForOrganisations("chamber_practice_areas",e,e=>e.eq("active",!0)),readRowsForOrganisations("vacation_schemes",e,e=>e.eq("active",!0).eq("is_published",!0)),readRowsForOrganisations("chamber_rankings",e,e=>e.eq("is_current",!0))]);addChambersLocationRows(r),addChambersPracticeAreaRows(t),addChambersOpportunityRows(a),addChambersRankingRows(n),chambersDirectoryState.chambers.forEach(e=>{addChambersOwnFields(e),e.locations=uniqueSorted(e.locations),e.circuits=uniqueSorted(e.circuits),e.practiceAreas=uniqueSorted(e.practiceAreas),e.opportunities=uniqueSorted(e.opportunities),e.rankings=sortChambersRankings(e.rankings)})}async function readRowsForOrganisations(e,r,t){let a=client.from(e).select("*").in("organisation_id",r);"function"==typeof t&&(a=t(a));const{data:n,error:i}=await a;return i?(console.warn(`Unable to read ${e}:`,i.message),[]):n||[]}function findChambersForRow(e){return e?.organisation_id&&chambersDirectoryState.chambersByOrganisationId.get(String(e.organisation_id))||null}function chambersDirectoryGeoKey(e){return String(e||"").normalize("NFKD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g," ").replace(/\s+/g," ").trim()}document.addEventListener("DOMContentLoaded",initialiseChambersDirectory);const chambersDirectoryCountryAliases=new Map(Object.entries({uk:"United Kingdom","u k":"United Kingdom","united kingdom":"United Kingdom","great britain":"United Kingdom",britain:"United Kingdom",england:"United Kingdom",wales:"United Kingdom",scotland:"United Kingdom","northern ireland":"United Kingdom","england and wales":"United Kingdom",netherlands:"Netherlands","the netherlands":"Netherlands",us:"United States","u s":"United States",usa:"United States","united states":"United States","united states of america":"United States",uae:"United Arab Emirates","u a e":"United Arab Emirates","united arab emirates":"United Arab Emirates",ireland:"Ireland","republic of ireland":"Ireland","hong kong":"Hong Kong","hong kong sar":"Hong Kong","hong kong s a r":"Hong Kong","hong kong sar china":"Hong Kong","czech republic":"Czechia",czechia:"Czechia","south korea":"South Korea","republic of korea":"South Korea",turkey:"Türkiye",turkiye:"Türkiye"}));function chambersDirectoryCanonicalCountry(e){const r=String(e||"").replaceAll("_"," ").replace(/\s+/g," ").trim();return r?chambersDirectoryCountryAliases.get(chambersDirectoryGeoKey(r))||r:""}function chambersDirectoryCleanCity(e,r){const t=chambersDirectoryCanonicalCountry(e);let a=String(r||"").replace(/\s+/g," ").trim().split(",").map(e=>e.trim()).filter(Boolean);return a.length?(t&&a.length&&chambersDirectoryGeoKey(chambersDirectoryCanonicalCountry(a[0]))===chambersDirectoryGeoKey(t)&&a.shift(),t&&a.length&&chambersDirectoryGeoKey(chambersDirectoryCanonicalCountry(a[a.length-1]))===chambersDirectoryGeoKey(t)&&a.pop(),a.length?"United States"===t&&a.length>1&&/^d\.?\s*c\.?$/i.test(a[1])?`${a[0]} DC`:a[0]:""):""}function chambersDirectoryLocationLabel(e,r){const t=chambersDirectoryCanonicalCountry(e),a=chambersDirectoryCleanCity(t,r);return t&&a&&chambersDirectoryGeoKey(t)!==chambersDirectoryGeoKey(a)?`${t}, ${a}`:t||a}function addChambersOwnFields(e){const r=chambersDirectoryLocationLabel(e.head_office_country,e.head_office_city);r&&e.locations.push(r)}function addChambersLocationRows(e){e.forEach(e=>{const r=findChambersForRow(e);if(!r)return;const t=chambersDirectoryLocationLabel(e.country,e.city||"");t&&r.locations.push(t),e.region&&r.circuits.push(e.region)})}function addChambersPracticeAreaRows(e){e.forEach(e=>{const r=findChambersForRow(e);r&&e.practice_area&&r.practiceAreas.push(e.practice_area)})}function addChambersOpportunityRows(e){e.forEach(e=>{const r=findChambersForRow(e);if(!r)return;const t=normaliseOpportunityType(e.scheme_type||e.scheme_name);t&&r.opportunities.push(t)})}function addChambersRankingRows(e){e.forEach(e=>{const r=findChambersForRow(e);r&&r.rankings.push(e)})}function sortChambersRankings(e){return[...e||[]].sort((e,r)=>{const t=numericBand(e?.ranking_band),a=numericBand(r?.ranking_band);if(t!==a)return t-a;const n=Number(e?.ranking_year)||0,i=Number(r?.ranking_year)||0;return n!==i?i-n:String(e?.practice_area||"").localeCompare(String(r?.practice_area||""))})}function numericBand(e){const r=String(e||"").match(/\d+/);return r?Number(r[0]):Number.POSITIVE_INFINITY}function normaliseOpportunityType(e){const r=normaliseText(e);return r?r.includes("assessed")&&r.includes("mini")?"assessed_mini_pupillage":r.includes("mini")?"mini_pupillage":r.includes("pupillage")?"pupillage":r.includes("work experience")?"work_experience":r.includes("open day")||r.includes("event")?"open_day":r.includes("scholarship")?"scholarship":r.includes("mentoring")?"mentoring":r.replaceAll(" ","_").replaceAll("-","_"):""}function populateChambersFilterOptions(){const e=uniqueSorted(chambersDirectoryState.chambers.flatMap(e=>e.locations)),r=uniqueSorted(chambersDirectoryState.chambers.flatMap(e=>e.circuits)),t=uniqueSorted(chambersDirectoryState.chambers.flatMap(e=>e.practiceAreas));addChambersSelectOptions(chambersDirectoryElements.location,e),addChambersSelectOptions(chambersDirectoryElements.circuit,r),addChambersSelectOptions(chambersDirectoryElements.practice,t)}function addChambersSelectOptions(e,r){e&&r.forEach(r=>{const t=document.createElement("option");t.value=r,t.textContent=r,e.appendChild(t)})}function applyChambersFilters(){const e=normaliseText(chambersDirectoryElements.search?.value||""),r=chambersDirectoryElements.location?.value||"",t=chambersDirectoryElements.circuit?.value||"",a=chambersDirectoryElements.practice?.value||"",n=chambersDirectoryElements.opportunity?.value||"",i=chambersDirectoryElements.sort?.value||"az";chambersDirectoryState.filteredChambers=chambersDirectoryState.chambers.filter(i=>{const s=normaliseText([getChambersName(i),i.short_name,i.chambers_type,i.overview,...i.locations,...i.circuits,...i.practiceAreas,...i.opportunities,...i.rankings.flatMap(e=>[e.ranking_source,e.ranking_name,e.ranking_band,e.practice_area,e.circuit_or_region])].filter(Boolean).join(" ")),o=!e||s.includes(e),c=!r||i.locations.includes(r),l=!t||i.circuits.includes(t),m=!a||i.practiceAreas.includes(a),h=!n||i.opportunities.includes(n);return o&&c&&l&&m&&h}),sortChambers(chambersDirectoryState.filteredChambers,i),renderChambersDirectory()}function sortChambers(e,r){e.sort((e,t)=>{const a=getChambersName(e),n=getChambersName(t);if("za"===r)return n.localeCompare(a);if("ranking"===r){const r=numericBand(e.rankings?.[0]?.ranking_band),a=numericBand(t.rankings?.[0]?.ranking_band);if(r!==a)return r-a}return a.localeCompare(n)})}function renderChambersDirectory(){if(!chambersDirectoryElements.list)return;chambersDirectoryElements.loading?.classList.add("hidden"),chambersDirectoryElements.error?.classList.add("hidden");const e=chambersDirectoryState.chambers.length,r=chambersDirectoryState.filteredChambers.length;if(chambersDirectoryElements.count&&(chambersDirectoryElements.count.textContent=0===e?"No verified chambers profiles added yet":r===e?`${e} chambers`:`${r} of ${e} chambers`),r)chambersDirectoryElements.empty?.classList.add("hidden"),chambersDirectoryElements.list.innerHTML=chambersDirectoryState.filteredChambers.map(createChambersCard).join(""),loadChambersCardLogos();else if(chambersDirectoryElements.list.innerHTML="",chambersDirectoryElements.empty){const r=e>0;chambersDirectoryElements.empty.innerHTML=r?"\n          <p>No chambers match these filters</p>\n          <span>Try clearing one or more filters.</span>\n        ":"\n          <p>Chambers profiles are being researched</p>\n          <span>Verified profiles will appear here as they are completed.</span>\n        ",chambersDirectoryElements.empty.classList.remove("hidden")}}function createChambersCard(e){const r=getChambersName(e)||"Barristers’ chambers",t=getChambersMark(e),a=`\n    <img\n      class="chambers-card-logo-image"\n      alt=""\n      loading="lazy"\n      referrerpolicy="no-referrer"\n      data-logo-candidates="${escapeHtml(getOfficialLogoCandidates(e).join("|"))}"\n      hidden\n    >\n\n    <span\n      class="chambers-card-logo-fallback"\n      style="${getChambersMarkStyle(t)}"\n    >\n      ${escapeHtml(t)}\n    </span>\n  `,n=e.locations[0]||"Location being researched",i=getCompactChambersRankingText(e.rankings),s=getChambersOpportunityText(e.opportunities);return`\n    <a\n      class="firm-card"\n      href="chamber-profile.html?id=${encodeURIComponent(e.organisation_id)}"\n      aria-label="View ${escapeHtml(r)} profile"\n    >\n      <div class="firm-card-header">\n        <div class="firm-logo" aria-hidden="true">\n          ${a}\n        </div>\n      </div>\n\n      <h3>\n        ${escapeHtml(r)}\n      </h3>\n\n      <p class="firm-type">\n        Barristers’ chambers\n      </p>\n\n      <div class="firm-details">\n        <p class="firm-location">\n          ${escapeHtml(n)}\n        </p>\n\n        <p class="firm-location">\n          ${escapeHtml(i)}\n        </p>\n\n        <span class="status-pill">\n          ${escapeHtml(s)}\n        </span>\n      </div>\n\n      <span class="firm-link">\n        View chambers profile\n        <span aria-hidden="true">→</span>\n      </span>\n    </a>\n  `}function getOfficialLogoCandidates(e){const r=[];if(e.logo_url&&r.push(e.logo_url),e.website_url)try{const t=new URL(e.website_url).origin;r.push(`${t}/favicon.svg`,`${t}/apple-touch-icon.png`,`${t}/apple-touch-icon-precomposed.png`,`${t}/favicon.png`,`${t}/favicon.ico`)}catch(e){}return[...new Set(r.filter(Boolean))]}function loadChambersCardLogos(){(chambersDirectoryElements.list?.querySelectorAll(".chambers-card-logo-image")||[]).forEach(e=>{tryChambersLogoCandidate(e,String(e.dataset.logoCandidates||"").split("|").map(e=>e.trim()).filter(Boolean),0)})}function tryChambersLogoCandidate(e,r,t){if(!e||t>=r.length)return;const a=r[t];e.onload=()=>{e.hidden=!1;const r=e.nextElementSibling;r&&(r.hidden=!0)},e.onerror=()=>{e.removeAttribute("src"),tryChambersLogoCandidate(e,r,t+1)},e.src=a}function getCompactChambersRankingText(e){const r=e?.[0];if(!r)return"Ranking not yet listed";const t=r.practice_area||r.ranking_name||"";return r.ranking_position?t?`Rank ${r.ranking_position} in ${t}`:`Rank ${r.ranking_position}`:r.ranking_band?t?`${r.ranking_band} in ${t}`:r.ranking_band:t?`Ranked in ${t}`:"Chambers UK ranked"}function getChambersMark(e){const r=String(e.short_name||"").trim();if(r&&!r.includes(" ")&&r.length<=6)return r.toUpperCase();const t=r||getChambersName(e);return String(t||"").replace(/[’']/g,"").split(/[\s-]+/).map(e=>e.trim()).filter(Boolean).filter(e=>!["the","of","and","chambers","barristers"].includes(e.toLowerCase())).map(e=>{const r=e.match(/^\d+/);if(r){const t=e.slice(r[0].length).replace(/[^a-zA-Z]/g,"");return r[0]+(t?t.charAt(0):"")}return e.replace(/[^a-zA-Z0-9]/g,"").charAt(0)}).join("").toUpperCase().slice(0,6)||"C"}function getChambersMarkStyle(e){const r=String(e||"").length;return r>=5?"font-size:0.82rem;letter-spacing:-0.04em;":4===r?"font-size:0.95rem;letter-spacing:-0.03em;":""}function getChambersOpportunityText(e){return e.includes("pupillage")?"Pupillage information available":e.includes("assessed_mini_pupillage")?"Assessed mini-pupillage":e.includes("mini_pupillage")?"Mini-pupillage information":e.length?"Student opportunities available":"Opportunities being researched"}function clearChambersFilters(){chambersDirectoryElements.search&&(chambersDirectoryElements.search.value=""),chambersDirectoryElements.sort&&(chambersDirectoryElements.sort.value="az"),chambersDirectoryElements.location&&(chambersDirectoryElements.location.value=""),chambersDirectoryElements.circuit&&(chambersDirectoryElements.circuit.value=""),chambersDirectoryElements.practice&&(chambersDirectoryElements.practice.value=""),chambersDirectoryElements.opportunity&&(chambersDirectoryElements.opportunity.value=""),applyChambersFilters(),chambersDirectoryElements.search?.focus()}function showChambersDirectoryError(){chambersDirectoryElements.loading?.classList.add("hidden"),chambersDirectoryElements.empty?.classList.add("hidden"),chambersDirectoryElements.error?.classList.remove("hidden"),chambersDirectoryElements.count&&(chambersDirectoryElements.count.textContent="The chambers directory could not be loaded.")}function uniqueSorted(e){return[...new Set(e.filter(Boolean).map(e=>String(e).trim()).filter(Boolean))].sort((e,r)=>e.localeCompare(r))}function normaliseText(e){return String(e||"").trim().toLowerCase()}function escapeHtml(e){return String(e??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;")}
+// =======================================
+// Vacatory
+// chambers-directory.js
+// Barristers' chambers directory
+// =======================================
+
+const chambersDirectoryState = {
+  chambers: [],
+  filteredChambers: [],
+  chambersByOrganisationId: new Map()
+};
+
+const chambersDirectoryElements = {};
+
+document.addEventListener(
+  "DOMContentLoaded",
+  initialiseChambersDirectory
+);
+
+async function initialiseChambersDirectory() {
+  cacheChambersDirectoryElements();
+  connectChambersDirectoryFilters();
+
+  if (typeof client === "undefined") {
+    console.error("The Supabase client is unavailable.");
+    showChambersDirectoryError();
+    return;
+  }
+
+  try {
+    const chamberRows = await loadChamberRows();
+
+    chambersDirectoryState.chambers = chamberRows
+      .map(normaliseChambers)
+      .filter(chambers => {
+        return (
+          chambers.organisation_id &&
+          getChambersName(chambers) &&
+          chambers.active !== false &&
+          chambers.organisation_active !== false
+        );
+      });
+
+    buildChambersMap();
+    await loadSupportingChambersData();
+
+    populateChambersFilterOptions();
+    applyChambersFilters();
+
+    chambersDirectoryElements.loading?.classList.add(
+      "hidden"
+    );
+  } catch (error) {
+    console.error("Unable to load chambers:", error);
+    showChambersDirectoryError();
+  }
+}
+
+async function loadChamberRows() {
+  const { data: chamberRows, error: chamberError } =
+    await client
+      .from("chambers")
+      .select("*")
+      .eq("active", true);
+
+  if (chamberError) {
+    throw chamberError;
+  }
+
+  const validChamberRows = (chamberRows || []).filter(
+    row => row?.organisation_id
+  );
+
+  if (!validChamberRows.length) {
+    return [];
+  }
+
+  const organisationIds = validChamberRows.map(
+    row => row.organisation_id
+  );
+
+  const { data: organisationRows, error: organisationError } =
+    await client
+      .from("legal_organisations")
+      .select("*")
+      .in("id", organisationIds)
+      .eq("organisation_type", "barristers_chambers")
+      .eq("active", true);
+
+  if (organisationError) {
+    throw organisationError;
+  }
+
+  const organisationsById = new Map(
+    (organisationRows || []).map(row => [
+      String(row.id),
+      row
+    ])
+  );
+
+  return validChamberRows
+    .map(chamber => {
+      const organisation = organisationsById.get(
+        String(chamber.organisation_id)
+      );
+
+      if (!organisation) {
+        return null;
+      }
+
+      return {
+        ...chamber,
+        ...organisation,
+        organisation_id: chamber.organisation_id,
+        chamber_active: chamber.active,
+        organisation_active: organisation.active,
+        chamber_profile_status: chamber.profile_status,
+        organisation_profile_status: organisation.profile_status,
+        chamber_research_status: chamber.research_status,
+        organisation_research_status:
+          organisation.research_status
+      };
+    })
+    .filter(Boolean);
+}
+
+function cacheChambersDirectoryElements() {
+  chambersDirectoryElements.search =
+    document.getElementById("directorySearch");
+
+  chambersDirectoryElements.sort =
+    document.getElementById("sortFilter");
+
+  chambersDirectoryElements.location =
+    document.getElementById("locationFilter");
+
+  chambersDirectoryElements.circuit =
+    document.getElementById("circuitFilter");
+
+  chambersDirectoryElements.practice =
+    document.getElementById("practiceFilter");
+
+  chambersDirectoryElements.opportunity =
+    document.getElementById("opportunityFilter");
+
+  chambersDirectoryElements.clear =
+    document.getElementById("clearFilters");
+
+  chambersDirectoryElements.count =
+    document.getElementById("directoryCount");
+
+  chambersDirectoryElements.loading =
+    document.getElementById("directoryLoading");
+
+  chambersDirectoryElements.error =
+    document.getElementById("directoryError");
+
+  chambersDirectoryElements.empty =
+    document.getElementById("directoryEmpty");
+
+  chambersDirectoryElements.list =
+    document.getElementById("chambersDirectory");
+}
+
+function connectChambersDirectoryFilters() {
+  chambersDirectoryElements.search?.addEventListener(
+    "input",
+    applyChambersFilters
+  );
+
+  chambersDirectoryElements.sort?.addEventListener(
+    "change",
+    applyChambersFilters
+  );
+
+  chambersDirectoryElements.location?.addEventListener(
+    "change",
+    applyChambersFilters
+  );
+
+  chambersDirectoryElements.circuit?.addEventListener(
+    "change",
+    applyChambersFilters
+  );
+
+  chambersDirectoryElements.practice?.addEventListener(
+    "change",
+    applyChambersFilters
+  );
+
+  chambersDirectoryElements.opportunity?.addEventListener(
+    "change",
+    applyChambersFilters
+  );
+
+  chambersDirectoryElements.clear?.addEventListener(
+    "click",
+    clearChambersFilters
+  );
+}
+
+function normaliseChambers(chambers) {
+  return {
+    ...chambers,
+    locations: [],
+    circuits: [],
+    practiceAreas: [],
+    opportunities: [],
+    rankings: []
+  };
+}
+
+function getChambersName(chambers) {
+  return chambers.name || chambers.short_name || "";
+}
+
+function buildChambersMap() {
+  chambersDirectoryState.chambersByOrganisationId.clear();
+
+  chambersDirectoryState.chambers.forEach(chambers => {
+    chambersDirectoryState.chambersByOrganisationId.set(
+      String(chambers.organisation_id),
+      chambers
+    );
+  });
+}
+
+async function loadSupportingChambersData() {
+  const organisationIds = chambersDirectoryState.chambers.map(
+    chambers => chambers.organisation_id
+  );
+
+  if (!organisationIds.length) {
+    return;
+  }
+
+  const [
+    organisationLocations,
+    chamberPracticeAreas,
+    opportunities,
+    chamberRankings
+  ] = await Promise.all([
+    readRowsForOrganisations(
+      "organisation_locations",
+      organisationIds,
+      query => query.eq("active", true)
+    ),
+
+    readRowsForOrganisations(
+      "chamber_practice_areas",
+      organisationIds,
+      query => query.eq("active", true)
+    ),
+
+    readRowsForOrganisations(
+      "vacation_schemes",
+      organisationIds,
+      query => query
+        .eq("active", true)
+        .eq("is_published", true)
+    ),
+
+    readRowsForOrganisations(
+      "chamber_rankings",
+      organisationIds,
+      query => query.eq("is_current", true)
+    )
+  ]);
+
+  addChambersLocationRows(organisationLocations);
+  addChambersPracticeAreaRows(chamberPracticeAreas);
+  addChambersOpportunityRows(opportunities);
+  addChambersRankingRows(chamberRankings);
+
+  chambersDirectoryState.chambers.forEach(chambers => {
+    addChambersOwnFields(chambers);
+
+    chambers.locations = uniqueSorted(
+      chambers.locations
+    );
+
+    chambers.circuits = uniqueSorted(
+      chambers.circuits
+    );
+
+    chambers.practiceAreas = uniqueSorted(
+      chambers.practiceAreas
+    );
+
+    chambers.opportunities = uniqueSorted(
+      chambers.opportunities
+    );
+
+    chambers.rankings = sortChambersRankings(
+      chambers.rankings
+    );
+  });
+}
+
+async function readRowsForOrganisations(
+  tableName,
+  organisationIds,
+  refineQuery
+) {
+  let query = client
+    .from(tableName)
+    .select("*")
+    .in("organisation_id", organisationIds);
+
+  if (typeof refineQuery === "function") {
+    query = refineQuery(query);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.warn(
+      `Unable to read ${tableName}:`,
+      error.message
+    );
+
+    return [];
+  }
+
+  return data || [];
+}
+
+function findChambersForRow(row) {
+  if (!row?.organisation_id) {
+    return null;
+  }
+
+  return (
+    chambersDirectoryState
+      .chambersByOrganisationId
+      .get(String(row.organisation_id)) || null
+  );
+}
+
+function chambersDirectoryGeoKey(value) {
+  return String(value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+const chambersDirectoryCountryAliases =
+  new Map(Object.entries({
+    "uk": "United Kingdom",
+    "u k": "United Kingdom",
+    "united kingdom": "United Kingdom",
+    "great britain": "United Kingdom",
+    "britain": "United Kingdom",
+    "england": "United Kingdom",
+    "wales": "United Kingdom",
+    "scotland": "United Kingdom",
+    "northern ireland": "United Kingdom",
+    "england and wales": "United Kingdom",
+    "netherlands": "Netherlands",
+    "the netherlands": "Netherlands",
+    "us": "United States",
+    "u s": "United States",
+    "usa": "United States",
+    "united states": "United States",
+    "united states of america": "United States",
+    "uae": "United Arab Emirates",
+    "u a e": "United Arab Emirates",
+    "united arab emirates": "United Arab Emirates",
+    "ireland": "Ireland",
+    "republic of ireland": "Ireland",
+    "hong kong": "Hong Kong",
+    "hong kong sar": "Hong Kong",
+    "hong kong s a r": "Hong Kong",
+    "hong kong sar china": "Hong Kong",
+    "czech republic": "Czechia",
+    "czechia": "Czechia",
+    "south korea": "South Korea",
+    "republic of korea": "South Korea",
+    "turkey": "Türkiye",
+    "turkiye": "Türkiye"
+  }));
+
+function chambersDirectoryCanonicalCountry(value) {
+  const text = String(value || "")
+    .replaceAll("_", " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!text) {
+    return "";
+  }
+
+  return (
+    chambersDirectoryCountryAliases.get(
+      chambersDirectoryGeoKey(text)
+    ) || text
+  );
+}
+
+function chambersDirectoryCleanCity(country, city) {
+  const publicCountry =
+    chambersDirectoryCanonicalCountry(country);
+
+  let parts = String(city || "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .split(",")
+    .map(part => part.trim())
+    .filter(Boolean);
+
+  if (!parts.length) {
+    return "";
+  }
+
+  if (
+    publicCountry &&
+    parts.length &&
+    chambersDirectoryGeoKey(
+      chambersDirectoryCanonicalCountry(parts[0])
+    ) === chambersDirectoryGeoKey(publicCountry)
+  ) {
+    parts.shift();
+  }
+
+  if (
+    publicCountry &&
+    parts.length &&
+    chambersDirectoryGeoKey(
+      chambersDirectoryCanonicalCountry(
+        parts[parts.length - 1]
+      )
+    ) === chambersDirectoryGeoKey(publicCountry)
+  ) {
+    parts.pop();
+  }
+
+  if (!parts.length) {
+    return "";
+  }
+
+  if (
+    publicCountry === "United States" &&
+    parts.length > 1 &&
+    /^d\.?\s*c\.?$/i.test(parts[1])
+  ) {
+    return `${parts[0]} DC`;
+  }
+
+  /*
+   * Exactly one city level in public filters.
+   */
+  return parts[0];
+}
+
+function chambersDirectoryLocationLabel(country, city) {
+  const publicCountry =
+    chambersDirectoryCanonicalCountry(country);
+
+  const publicCity =
+    chambersDirectoryCleanCity(
+      publicCountry,
+      city
+    );
+
+  if (
+    publicCountry &&
+    publicCity &&
+    chambersDirectoryGeoKey(publicCountry) !==
+      chambersDirectoryGeoKey(publicCity)
+  ) {
+    return `${publicCountry}, ${publicCity}`;
+  }
+
+  return publicCountry || publicCity;
+}
+
+function addChambersOwnFields(chambers) {
+  const location =
+    chambersDirectoryLocationLabel(
+      chambers.head_office_country,
+      chambers.head_office_city
+    );
+
+  if (location) {
+    chambers.locations.push(location);
+  }
+}
+
+function addChambersLocationRows(rows) {
+  rows.forEach(row => {
+    const chambers = findChambersForRow(row);
+
+    if (!chambers) {
+      return;
+    }
+
+    /*
+     * Only the structured city field belongs in
+     * the Location filter.
+     */
+    const location =
+      chambersDirectoryLocationLabel(
+        row.country,
+        row.city || ""
+      );
+
+    if (location) {
+      chambers.locations.push(location);
+    }
+
+    if (row.region) {
+      chambers.circuits.push(row.region);
+    }
+  });
+}
+
+function addChambersPracticeAreaRows(rows) {
+  rows.forEach(row => {
+    const chambers = findChambersForRow(row);
+
+    if (!chambers || !row.practice_area) {
+      return;
+    }
+
+    chambers.practiceAreas.push(row.practice_area);
+  });
+}
+
+function addChambersOpportunityRows(rows) {
+  rows.forEach(row => {
+    const chambers = findChambersForRow(row);
+
+    if (!chambers) {
+      return;
+    }
+
+    const opportunity = normaliseOpportunityType(
+      row.scheme_type || row.scheme_name
+    );
+
+    if (opportunity) {
+      chambers.opportunities.push(opportunity);
+    }
+  });
+}
+
+function addChambersRankingRows(rows) {
+  rows.forEach(row => {
+    const chambers = findChambersForRow(row);
+
+    if (!chambers) {
+      return;
+    }
+
+    chambers.rankings.push(row);
+  });
+}
+
+function sortChambersRankings(rankings) {
+  return [...(rankings || [])].sort((first, second) => {
+    const firstBand = numericBand(first?.ranking_band);
+    const secondBand = numericBand(second?.ranking_band);
+
+    if (firstBand !== secondBand) {
+      return firstBand - secondBand;
+    }
+
+    const firstYear = Number(first?.ranking_year) || 0;
+    const secondYear = Number(second?.ranking_year) || 0;
+
+    if (firstYear !== secondYear) {
+      return secondYear - firstYear;
+    }
+
+    return String(first?.practice_area || "")
+      .localeCompare(String(second?.practice_area || ""));
+  });
+}
+
+function numericBand(value) {
+  const match = String(value || "").match(/\d+/);
+
+  return match
+    ? Number(match[0])
+    : Number.POSITIVE_INFINITY;
+}
+
+function normaliseOpportunityType(value) {
+  const opportunity = normaliseText(value);
+
+  if (!opportunity) {
+    return "";
+  }
+
+  if (
+    opportunity.includes("assessed") &&
+    opportunity.includes("mini")
+  ) {
+    return "assessed_mini_pupillage";
+  }
+
+  if (opportunity.includes("mini")) {
+    return "mini_pupillage";
+  }
+
+  if (opportunity.includes("pupillage")) {
+    return "pupillage";
+  }
+
+  if (opportunity.includes("work experience")) {
+    return "work_experience";
+  }
+
+  if (
+    opportunity.includes("open day") ||
+    opportunity.includes("event")
+  ) {
+    return "open_day";
+  }
+
+  if (opportunity.includes("scholarship")) {
+    return "scholarship";
+  }
+
+  if (opportunity.includes("mentoring")) {
+    return "mentoring";
+  }
+
+  return opportunity
+    .replaceAll(" ", "_")
+    .replaceAll("-", "_");
+}
+
+function populateChambersFilterOptions() {
+  const locations = uniqueSorted(
+    chambersDirectoryState.chambers.flatMap(
+      chambers => chambers.locations
+    )
+  );
+
+  const circuits = uniqueSorted(
+    chambersDirectoryState.chambers.flatMap(
+      chambers => chambers.circuits
+    )
+  );
+
+  const practiceAreas = uniqueSorted(
+    chambersDirectoryState.chambers.flatMap(
+      chambers => chambers.practiceAreas
+    )
+  );
+
+  addChambersSelectOptions(
+    chambersDirectoryElements.location,
+    locations
+  );
+
+  addChambersSelectOptions(
+    chambersDirectoryElements.circuit,
+    circuits
+  );
+
+  addChambersSelectOptions(
+    chambersDirectoryElements.practice,
+    practiceAreas
+  );
+}
+
+function addChambersSelectOptions(selectElement, values) {
+  if (!selectElement) {
+    return;
+  }
+
+  values.forEach(value => {
+    const option = document.createElement("option");
+
+    option.value = value;
+    option.textContent = value;
+
+    selectElement.appendChild(option);
+  });
+}
+
+function applyChambersFilters() {
+  const searchTerm = normaliseText(
+    chambersDirectoryElements.search?.value || ""
+  );
+
+  const selectedLocation =
+    chambersDirectoryElements.location?.value || "";
+
+  const selectedCircuit =
+    chambersDirectoryElements.circuit?.value || "";
+
+  const selectedPractice =
+    chambersDirectoryElements.practice?.value || "";
+
+  const selectedOpportunity =
+    chambersDirectoryElements.opportunity?.value || "";
+
+  const selectedSort =
+    chambersDirectoryElements.sort?.value || "az";
+
+  chambersDirectoryState.filteredChambers =
+    chambersDirectoryState.chambers.filter(chambers => {
+      const searchableText = normaliseText(
+        [
+          getChambersName(chambers),
+          chambers.short_name,
+          chambers.chambers_type,
+          chambers.overview,
+          ...chambers.locations,
+          ...chambers.circuits,
+          ...chambers.practiceAreas,
+          ...chambers.opportunities,
+          ...chambers.rankings.flatMap(ranking => [
+            ranking.ranking_source,
+            ranking.ranking_name,
+            ranking.ranking_band,
+            ranking.practice_area,
+            ranking.circuit_or_region
+          ])
+        ]
+          .filter(Boolean)
+          .join(" ")
+      );
+
+      const matchesSearch =
+        !searchTerm || searchableText.includes(searchTerm);
+
+      const matchesLocation =
+        !selectedLocation ||
+        chambers.locations.includes(selectedLocation);
+
+      const matchesCircuit =
+        !selectedCircuit ||
+        chambers.circuits.includes(selectedCircuit);
+
+      const matchesPractice =
+        !selectedPractice ||
+        chambers.practiceAreas.includes(selectedPractice);
+
+      const matchesOpportunity =
+        !selectedOpportunity ||
+        chambers.opportunities.includes(selectedOpportunity);
+
+      return (
+        matchesSearch &&
+        matchesLocation &&
+        matchesCircuit &&
+        matchesPractice &&
+        matchesOpportunity
+      );
+    });
+
+  sortChambers(
+    chambersDirectoryState.filteredChambers,
+    selectedSort
+  );
+
+  renderChambersDirectory();
+}
+
+function sortChambers(chambers, sortValue) {
+  chambers.sort((first, second) => {
+    const firstName = getChambersName(first);
+    const secondName = getChambersName(second);
+
+    if (sortValue === "za") {
+      return secondName.localeCompare(firstName);
+    }
+
+    if (sortValue === "ranking") {
+      const firstBand = numericBand(
+        first.rankings?.[0]?.ranking_band
+      );
+
+      const secondBand = numericBand(
+        second.rankings?.[0]?.ranking_band
+      );
+
+      if (firstBand !== secondBand) {
+        return firstBand - secondBand;
+      }
+    }
+
+    return firstName.localeCompare(secondName);
+  });
+}
+
+function renderChambersDirectory() {
+  if (!chambersDirectoryElements.list) {
+    return;
+  }
+
+  chambersDirectoryElements.loading?.classList.add(
+    "hidden"
+  );
+
+  chambersDirectoryElements.error?.classList.add(
+    "hidden"
+  );
+
+  const totalChambers =
+    chambersDirectoryState.chambers.length;
+
+  const visibleChambers =
+    chambersDirectoryState.filteredChambers.length;
+
+  if (chambersDirectoryElements.count) {
+    if (totalChambers === 0) {
+      chambersDirectoryElements.count.textContent =
+        "No verified chambers profiles added yet";
+    } else if (visibleChambers === totalChambers) {
+      chambersDirectoryElements.count.textContent =
+        `${totalChambers} chambers`;
+    } else {
+      chambersDirectoryElements.count.textContent =
+        `${visibleChambers} of ${totalChambers} chambers`;
+    }
+  }
+
+  if (!visibleChambers) {
+    chambersDirectoryElements.list.innerHTML = "";
+
+    if (chambersDirectoryElements.empty) {
+      const hasChambers = totalChambers > 0;
+
+      chambersDirectoryElements.empty.innerHTML = hasChambers
+        ? `
+          <p>No chambers match these filters</p>
+          <span>Try clearing one or more filters.</span>
+        `
+        : `
+          <p>Chambers profiles are being researched</p>
+          <span>Verified profiles will appear here as they are completed.</span>
+        `;
+
+      chambersDirectoryElements.empty.classList.remove(
+        "hidden"
+      );
+    }
+
+    return;
+  }
+
+  chambersDirectoryElements.empty?.classList.add(
+    "hidden"
+  );
+
+  chambersDirectoryElements.list.innerHTML =
+    chambersDirectoryState.filteredChambers
+      .map(createChambersCard)
+      .join("");
+
+  loadChambersCardLogos();
+}
+
+function createChambersCard(chambers) {
+  const chambersName =
+    getChambersName(chambers) ||
+    "Barristers’ chambers";
+
+  const chamberMark = getChambersMark(chambers);
+
+  const logoCandidates =
+    getOfficialLogoCandidates(chambers);
+
+  const logo = `
+    <img
+      class="chambers-card-logo-image"
+      alt=""
+      loading="lazy"
+      referrerpolicy="no-referrer"
+      data-logo-candidates="${escapeHtml(
+        logoCandidates.join("|")
+      )}"
+      hidden
+    >
+
+    <span
+      class="chambers-card-logo-fallback"
+      style="${getChambersMarkStyle(chamberMark)}"
+    >
+      ${escapeHtml(chamberMark)}
+    </span>
+  `;
+
+  const location =
+    chambers.locations[0] ||
+    "Location being researched";
+
+  const rankingText =
+    getCompactChambersRankingText(
+      chambers.rankings
+    );
+
+  const opportunityText =
+    getChambersOpportunityText(
+      chambers.opportunities
+    );
+
+  return `
+    <a
+      class="firm-card"
+      href="chamber-profile.html?id=${encodeURIComponent(
+        chambers.organisation_id
+      )}"
+      aria-label="View ${escapeHtml(chambersName)} profile"
+    >
+      <div class="firm-card-header">
+        <div class="firm-logo" aria-hidden="true">
+          ${logo}
+        </div>
+      </div>
+
+      <h3>
+        ${escapeHtml(chambersName)}
+      </h3>
+
+      <p class="firm-type">
+        Barristers’ chambers
+      </p>
+
+      <div class="firm-details">
+        <p class="firm-location">
+          ${escapeHtml(location)}
+        </p>
+
+        <p class="firm-location">
+          ${escapeHtml(rankingText)}
+        </p>
+
+        <span class="status-pill">
+          ${escapeHtml(opportunityText)}
+        </span>
+      </div>
+
+      <span class="firm-link">
+        View chambers profile
+        <span aria-hidden="true">→</span>
+      </span>
+    </a>
+  `;
+}
+
+function getOfficialLogoCandidates(chambers) {
+  const candidates = [];
+
+  if (chambers.logo_url) {
+    candidates.push(chambers.logo_url);
+  }
+
+  if (chambers.website_url) {
+    try {
+      const origin = new URL(
+        chambers.website_url
+      ).origin;
+
+      candidates.push(
+        `${origin}/favicon.svg`,
+        `${origin}/apple-touch-icon.png`,
+        `${origin}/apple-touch-icon-precomposed.png`,
+        `${origin}/favicon.png`,
+        `${origin}/favicon.ico`
+      );
+    } catch (error) {
+      // The abbreviation remains visible.
+    }
+  }
+
+  return [...new Set(candidates.filter(Boolean))];
+}
+
+function loadChambersCardLogos() {
+  const images =
+    chambersDirectoryElements.list?.querySelectorAll(
+      ".chambers-card-logo-image"
+    ) || [];
+
+  images.forEach(image => {
+    const candidates = String(
+      image.dataset.logoCandidates || ""
+    )
+      .split("|")
+      .map(value => value.trim())
+      .filter(Boolean);
+
+    tryChambersLogoCandidate(
+      image,
+      candidates,
+      0
+    );
+  });
+}
+
+function tryChambersLogoCandidate(
+  image,
+  candidates,
+  index
+) {
+  if (!image || index >= candidates.length) {
+    return;
+  }
+
+  const candidate = candidates[index];
+
+  image.onload = () => {
+    image.hidden = false;
+
+    const fallback = image.nextElementSibling;
+
+    if (fallback) {
+      fallback.hidden = true;
+    }
+  };
+
+  image.onerror = () => {
+    image.removeAttribute("src");
+
+    tryChambersLogoCandidate(
+      image,
+      candidates,
+      index + 1
+    );
+  };
+
+  image.src = candidate;
+}
+
+function getCompactChambersRankingText(rankings) {
+  const ranking = rankings?.[0];
+
+  if (!ranking) {
+    return "Ranking not yet listed";
+  }
+
+  const area =
+    ranking.practice_area ||
+    ranking.ranking_name ||
+    "";
+
+  if (ranking.ranking_position) {
+    return area
+      ? `Rank ${ranking.ranking_position} in ${area}`
+      : `Rank ${ranking.ranking_position}`;
+  }
+
+  if (ranking.ranking_band) {
+    return area
+      ? `${ranking.ranking_band} in ${area}`
+      : ranking.ranking_band;
+  }
+
+  return area
+    ? `Ranked in ${area}`
+    : "Chambers UK ranked";
+}
+
+function getChambersMark(chambers) {
+  const shortName = String(
+    chambers.short_name || ""
+  ).trim();
+
+  if (
+    shortName &&
+    !shortName.includes(" ") &&
+    shortName.length <= 6
+  ) {
+    return shortName.toUpperCase();
+  }
+
+  const source = shortName || getChambersName(chambers);
+
+  const words = String(source || "")
+    .replace(/[’']/g, "")
+    .split(/[\s-]+/)
+    .map(word => word.trim())
+    .filter(Boolean)
+    .filter(word => {
+      return ![
+        "the",
+        "of",
+        "and",
+        "chambers",
+        "barristers"
+      ].includes(word.toLowerCase());
+    });
+
+  const mark = words
+    .map(word => {
+      const leadingNumber = word.match(/^\d+/);
+
+      if (leadingNumber) {
+        const letters = word
+          .slice(leadingNumber[0].length)
+          .replace(/[^a-zA-Z]/g, "");
+
+        return (
+          leadingNumber[0] +
+          (letters ? letters.charAt(0) : "")
+        );
+      }
+
+      return word.replace(/[^a-zA-Z0-9]/g, "").charAt(0);
+    })
+    .join("")
+    .toUpperCase();
+
+  return mark.slice(0, 6) || "C";
+}
+
+function getChambersMarkStyle(mark) {
+  const length = String(mark || "").length;
+
+  if (length >= 5) {
+    return "font-size:0.82rem;letter-spacing:-0.04em;";
+  }
+
+  if (length === 4) {
+    return "font-size:0.95rem;letter-spacing:-0.03em;";
+  }
+
+  return "";
+}
+
+function getChambersOpportunityText(opportunities) {
+  if (opportunities.includes("pupillage")) {
+    return "Pupillage information available";
+  }
+
+  if (
+    opportunities.includes("assessed_mini_pupillage")
+  ) {
+    return "Assessed mini-pupillage";
+  }
+
+  if (opportunities.includes("mini_pupillage")) {
+    return "Mini-pupillage information";
+  }
+
+  if (opportunities.length) {
+    return "Student opportunities available";
+  }
+
+  return "Opportunities being researched";
+}
+
+function clearChambersFilters() {
+  if (chambersDirectoryElements.search) {
+    chambersDirectoryElements.search.value = "";
+  }
+
+  if (chambersDirectoryElements.sort) {
+    chambersDirectoryElements.sort.value = "az";
+  }
+
+  if (chambersDirectoryElements.location) {
+    chambersDirectoryElements.location.value = "";
+  }
+
+  if (chambersDirectoryElements.circuit) {
+    chambersDirectoryElements.circuit.value = "";
+  }
+
+  if (chambersDirectoryElements.practice) {
+    chambersDirectoryElements.practice.value = "";
+  }
+
+  if (chambersDirectoryElements.opportunity) {
+    chambersDirectoryElements.opportunity.value = "";
+  }
+
+  applyChambersFilters();
+  chambersDirectoryElements.search?.focus();
+}
+
+function showChambersDirectoryError() {
+  chambersDirectoryElements.loading?.classList.add(
+    "hidden"
+  );
+
+  chambersDirectoryElements.empty?.classList.add(
+    "hidden"
+  );
+
+  chambersDirectoryElements.error?.classList.remove(
+    "hidden"
+  );
+
+  if (chambersDirectoryElements.count) {
+    chambersDirectoryElements.count.textContent =
+      "The chambers directory could not be loaded.";
+  }
+}
+
+function uniqueSorted(values) {
+  return [
+    ...new Set(
+      values
+        .filter(Boolean)
+        .map(value => String(value).trim())
+        .filter(Boolean)
+    )
+  ].sort((first, second) =>
+    first.localeCompare(second)
+  );
+}
+
+function normaliseText(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase();
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
