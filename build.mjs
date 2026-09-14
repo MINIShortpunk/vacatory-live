@@ -2166,6 +2166,24 @@ async function generateFirmPages(firms, data) {
   return usedSlugs;
 }
 
+async function syncGeneratedRootDirectory(directoryName) {
+  const sourceDirectory = join(OUTPUT_DIRECTORY, directoryName);
+
+  await rm(directoryName, {
+    recursive: true,
+    force: true
+  });
+
+  await cp(
+    sourceDirectory,
+    directoryName,
+    {
+      recursive: true,
+      force: true
+    }
+  );
+}
+
 async function generateSitemap(firms) {
   let sitemap = await readFile("sitemap.xml", "utf8");
   const firmTabs = ["opportunities", "pay-funding-visas", "practice-areas", "locations", "roles", "inclusion-disability", "pro-bono", "firm-highlights", "links-socials"];
@@ -2230,6 +2248,8 @@ async function build() {
   );
 
   await generateFirmPages(firms, staticData);
+
+  await syncGeneratedRootDirectory("firms");
 
   await generateSitemap(firms);
 
