@@ -22,7 +22,7 @@ async function initialiseFirmsDirectory() {
     const { data: e, error: t } = await client
       .from("firms")
       .select(
-        "id,name,short_name,logo_url,firm_type,head_office,uk_rank,organisation_id",
+        "id,name,short_name,slug,logo_url,firm_type,head_office,uk_rank,organisation_id",
       );
     if (t) throw t;
     ((firmsDirectoryState.firms = (e || [])
@@ -727,7 +727,7 @@ function firmSlugForProfileUrl(value) {
 
 function firmProfileUrl(firm) {
   return `/firms/${firmSlugForProfileUrl(
-    firm?.name || firm?.short_name || firm?.id,
+    firm?.slug || firm?.name || firm?.short_name || firm?.id,
   )}/`;
 }
 

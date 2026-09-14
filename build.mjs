@@ -2108,7 +2108,9 @@ async function generateFirmPages(firms, data) {
       firstFirmValue(firm, ["name", "short_name"]) ||
       String(firm.id);
 
-    const slug = firmSlug(name);
+    const slug =
+      firmSlug(firstFirmValue(firm, ["slug"])) ||
+      firmSlug(name);
 
     if (!slug) {
       throw new Error(
@@ -2161,6 +2163,48 @@ async function generateFirmPages(firms, data) {
       result,
       "utf8"
     );
+
+    const legacySlug = firmSlug(name);
+
+    if (legacySlug && legacySlug !== slug && !usedSlugs.has(legacySlug)) {
+      const legacyDirectory = join(
+        OUTPUT_DIRECTORY,
+        "firms",
+        legacySlug
+      );
+
+      await mkdir(legacyDirectory, {
+        recursive: true
+      });
+
+      const redirectTarget = `/firms/${slug}/`;
+      const redirectHtml = await minifyHtmlSource(
+        `<!DOCTYPE html>
+        <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>${escapeHtml(name)} moved — Vacatory</title>
+            <link rel="canonical" href="${SITE_URL}${redirectTarget}">
+            <meta http-equiv="refresh" content="0; url=${redirectTarget}">
+            <script>window.location.replace(${jsonForHtml(redirectTarget)});</script>
+          </head>
+          <body>
+            <p>
+              This firm profile has moved to
+              <a href="${redirectTarget}">${escapeHtml(name)} on Vacatory</a>.
+            </p>
+          </body>
+        </html>`,
+        `firms/${legacySlug}/index.html`
+      );
+
+      await writeFile(
+        join(legacyDirectory, "index.html"),
+        redirectHtml,
+        "utf8"
+      );
+    }
   }
 
   return usedSlugs;
@@ -2196,7 +2240,9 @@ async function generateSitemap(firms) {
 
   const firmEntries = firms.flatMap((firm) => {
     const name = firstFirmValue(firm, ["name", "short_name"]) || String(firm.id);
-    const slug = firmSlug(name);
+    const slug =
+      firmSlug(firstFirmValue(firm, ["slug"])) ||
+      firmSlug(name);
     const base = `${SITE_URL}/firms/${slug}/`;
     return [
       `  <url>\n    <loc>${base}</loc>\n  </url>`,
