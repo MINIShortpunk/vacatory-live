@@ -506,6 +506,7 @@
           .order("public_title", { ascending: true });
       } else {
         query = query
+          .eq("is_event", false)
           .eq("has_exact_application_deadline", true);
 
         if (!descriptor.includePassed) {
@@ -674,6 +675,7 @@
 
     for (const occurrence of occurrences || []) {
       if (
+        occurrence.isEvent ||
         !occurrence.hasExactApplicationDeadline ||
         !occurrence.deadlineKey ||
         !occurrence.closesOn
