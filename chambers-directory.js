@@ -7,15 +7,14 @@
 const chambersDirectoryState = {
   chambers: [],
   filteredChambers: [],
-  chambersByOrganisationId: new Map()
+  chambersByOrganisationId: new Map(),
+  supportingDataPromise: null,
+  supportingDataLoaded: false,
 };
 
 const chambersDirectoryElements = {};
 
-document.addEventListener(
-  "DOMContentLoaded",
-  initialiseChambersDirectory
-);
+document.addEventListener("DOMContentLoaded", initialiseChambersDirectory);
 
 async function initialiseChambersDirectory() {
   cacheChambersDirectoryElements();
@@ -32,7 +31,7 @@ async function initialiseChambersDirectory() {
 
     chambersDirectoryState.chambers = chamberRows
       .map(normaliseChambers)
-      .filter(chambers => {
+      .filter((chambers) => {
         return (
           chambers.organisation_id &&
           getChambersName(chambers) &&
@@ -42,14 +41,11 @@ async function initialiseChambersDirectory() {
       });
 
     buildChambersMap();
-    await loadSupportingChambersData();
 
     populateChambersFilterOptions();
     applyChambersFilters();
 
-    chambersDirectoryElements.loading?.classList.add(
-      "hidden"
-    );
+    chambersDirectoryElements.loading?.classList.add("hidden");
   } catch (error) {
     console.error("Unable to load chambers:", error);
     showChambersDirectoryError();
@@ -57,51 +53,44 @@ async function initialiseChambersDirectory() {
 }
 
 async function loadChamberRows() {
-  const { data: chamberRows, error: chamberError } =
-    await client
-      .from("chambers")
-      .select("*")
-      .eq("active", true);
+  const { data: chamberRows, error: chamberError } = await client
+    .from("chambers")
+    .select("*")
+    .eq("active", true);
 
   if (chamberError) {
     throw chamberError;
   }
 
   const validChamberRows = (chamberRows || []).filter(
-    row => row?.organisation_id
+    (row) => row?.organisation_id,
   );
 
   if (!validChamberRows.length) {
     return [];
   }
 
-  const organisationIds = validChamberRows.map(
-    row => row.organisation_id
-  );
+  const organisationIds = validChamberRows.map((row) => row.organisation_id);
 
-  const { data: organisationRows, error: organisationError } =
-    await client
-      .from("legal_organisations")
-      .select("*")
-      .in("id", organisationIds)
-      .eq("organisation_type", "barristers_chambers")
-      .eq("active", true);
+  const { data: organisationRows, error: organisationError } = await client
+    .from("legal_organisations")
+    .select("*")
+    .in("id", organisationIds)
+    .eq("organisation_type", "barristers_chambers")
+    .eq("active", true);
 
   if (organisationError) {
     throw organisationError;
   }
 
   const organisationsById = new Map(
-    (organisationRows || []).map(row => [
-      String(row.id),
-      row
-    ])
+    (organisationRows || []).map((row) => [String(row.id), row]),
   );
 
   return validChamberRows
-    .map(chamber => {
+    .map((chamber) => {
       const organisation = organisationsById.get(
-        String(chamber.organisation_id)
+        String(chamber.organisation_id),
       );
 
       if (!organisation) {
@@ -117,25 +106,21 @@ async function loadChamberRows() {
         chamber_profile_status: chamber.profile_status,
         organisation_profile_status: organisation.profile_status,
         chamber_research_status: chamber.research_status,
-        organisation_research_status:
-          organisation.research_status
+        organisation_research_status: organisation.research_status,
       };
     })
     .filter(Boolean);
 }
 
 function cacheChambersDirectoryElements() {
-  chambersDirectoryElements.search =
-    document.getElementById("directorySearch");
+  chambersDirectoryElements.search = document.getElementById("directorySearch");
 
-  chambersDirectoryElements.sort =
-    document.getElementById("sortFilter");
+  chambersDirectoryElements.sort = document.getElementById("sortFilter");
 
   chambersDirectoryElements.location =
     document.getElementById("locationFilter");
 
-  chambersDirectoryElements.circuit =
-    document.getElementById("circuitFilter");
+  chambersDirectoryElements.circuit = document.getElementById("circuitFilter");
 
   chambersDirectoryElements.practice =
     document.getElementById("practiceFilter");
@@ -143,60 +128,57 @@ function cacheChambersDirectoryElements() {
   chambersDirectoryElements.opportunity =
     document.getElementById("opportunityFilter");
 
-  chambersDirectoryElements.clear =
-    document.getElementById("clearFilters");
+  chambersDirectoryElements.clear = document.getElementById("clearFilters");
 
-  chambersDirectoryElements.count =
-    document.getElementById("directoryCount");
+  chambersDirectoryElements.count = document.getElementById("directoryCount");
 
   chambersDirectoryElements.loading =
     document.getElementById("directoryLoading");
 
-  chambersDirectoryElements.error =
-    document.getElementById("directoryError");
+  chambersDirectoryElements.error = document.getElementById("directoryError");
 
-  chambersDirectoryElements.empty =
-    document.getElementById("directoryEmpty");
+  chambersDirectoryElements.empty = document.getElementById("directoryEmpty");
 
-  chambersDirectoryElements.list =
-    document.getElementById("chambersDirectory");
+  chambersDirectoryElements.list = document.getElementById("chambersDirectory");
 }
 
 function connectChambersDirectoryFilters() {
   chambersDirectoryElements.search?.addEventListener(
     "input",
-    applyChambersFilters
+    applyChambersFilters,
   );
 
   chambersDirectoryElements.sort?.addEventListener(
     "change",
-    applyChambersFilters
+    applyChambersFilters,
   );
 
   chambersDirectoryElements.location?.addEventListener(
     "change",
-    applyChambersFilters
+    applyChambersFilters,
   );
 
   chambersDirectoryElements.circuit?.addEventListener(
     "change",
-    applyChambersFilters
+    applyChambersFilters,
   );
 
   chambersDirectoryElements.practice?.addEventListener(
     "change",
-    applyChambersFilters
+    applyChambersFilters,
   );
 
   chambersDirectoryElements.opportunity?.addEventListener(
     "change",
-    applyChambersFilters
+    applyChambersFilters,
   );
 
   chambersDirectoryElements.clear?.addEventListener(
     "click",
-    clearChambersFilters
+    clearChambersFilters,
   );
+
+  connectChambersAdvancedFilterLoading();
 }
 
 function normaliseChambers(chambers) {
@@ -206,7 +188,7 @@ function normaliseChambers(chambers) {
     circuits: [],
     practiceAreas: [],
     opportunities: [],
-    rankings: []
+    rankings: [],
   };
 }
 
@@ -217,17 +199,17 @@ function getChambersName(chambers) {
 function buildChambersMap() {
   chambersDirectoryState.chambersByOrganisationId.clear();
 
-  chambersDirectoryState.chambers.forEach(chambers => {
+  chambersDirectoryState.chambers.forEach((chambers) => {
     chambersDirectoryState.chambersByOrganisationId.set(
       String(chambers.organisation_id),
-      chambers
+      chambers,
     );
   });
 }
 
 async function loadSupportingChambersData() {
   const organisationIds = chambersDirectoryState.chambers.map(
-    chambers => chambers.organisation_id
+    (chambers) => chambers.organisation_id,
   );
 
   if (!organisationIds.length) {
@@ -238,33 +220,27 @@ async function loadSupportingChambersData() {
     organisationLocations,
     chamberPracticeAreas,
     opportunities,
-    chamberRankings
+    chamberRankings,
   ] = await Promise.all([
     readRowsForOrganisations(
       "organisation_locations",
       organisationIds,
-      query => query.eq("active", true)
+      (query) => query.eq("active", true),
     ),
 
     readRowsForOrganisations(
       "chamber_practice_areas",
       organisationIds,
-      query => query.eq("active", true)
+      (query) => query.eq("active", true),
     ),
 
-    readRowsForOrganisations(
-      "vacation_schemes",
-      organisationIds,
-      query => query
-        .eq("active", true)
-        .eq("is_published", true)
+    readRowsForOrganisations("vacation_schemes", organisationIds, (query) =>
+      query.eq("active", true).eq("is_published", true),
     ),
 
-    readRowsForOrganisations(
-      "chamber_rankings",
-      organisationIds,
-      query => query.eq("is_current", true)
-    )
+    readRowsForOrganisations("chamber_rankings", organisationIds, (query) =>
+      query.eq("is_current", true),
+    ),
   ]);
 
   addChambersLocationRows(organisationLocations);
@@ -272,35 +248,25 @@ async function loadSupportingChambersData() {
   addChambersOpportunityRows(opportunities);
   addChambersRankingRows(chamberRankings);
 
-  chambersDirectoryState.chambers.forEach(chambers => {
+  chambersDirectoryState.chambers.forEach((chambers) => {
     addChambersOwnFields(chambers);
 
-    chambers.locations = uniqueSorted(
-      chambers.locations
-    );
+    chambers.locations = uniqueSorted(chambers.locations);
 
-    chambers.circuits = uniqueSorted(
-      chambers.circuits
-    );
+    chambers.circuits = uniqueSorted(chambers.circuits);
 
-    chambers.practiceAreas = uniqueSorted(
-      chambers.practiceAreas
-    );
+    chambers.practiceAreas = uniqueSorted(chambers.practiceAreas);
 
-    chambers.opportunities = uniqueSorted(
-      chambers.opportunities
-    );
+    chambers.opportunities = uniqueSorted(chambers.opportunities);
 
-    chambers.rankings = sortChambersRankings(
-      chambers.rankings
-    );
+    chambers.rankings = sortChambersRankings(chambers.rankings);
   });
 }
 
 async function readRowsForOrganisations(
   tableName,
   organisationIds,
-  refineQuery
+  refineQuery,
 ) {
   let query = client
     .from(tableName)
@@ -314,10 +280,7 @@ async function readRowsForOrganisations(
   const { data, error } = await query;
 
   if (error) {
-    console.warn(
-      `Unable to read ${tableName}:`,
-      error.message
-    );
+    console.warn(`Unable to read ${tableName}:`, error.message);
 
     return [];
   }
@@ -331,9 +294,9 @@ function findChambersForRow(row) {
   }
 
   return (
-    chambersDirectoryState
-      .chambersByOrganisationId
-      .get(String(row.organisation_id)) || null
+    chambersDirectoryState.chambersByOrganisationId.get(
+      String(row.organisation_id),
+    ) || null
   );
 }
 
@@ -347,41 +310,42 @@ function chambersDirectoryGeoKey(value) {
     .trim();
 }
 
-const chambersDirectoryCountryAliases =
-  new Map(Object.entries({
-    "uk": "United Kingdom",
+const chambersDirectoryCountryAliases = new Map(
+  Object.entries({
+    uk: "United Kingdom",
     "u k": "United Kingdom",
     "united kingdom": "United Kingdom",
     "great britain": "United Kingdom",
-    "britain": "United Kingdom",
-    "england": "United Kingdom",
-    "wales": "United Kingdom",
-    "scotland": "United Kingdom",
+    britain: "United Kingdom",
+    england: "United Kingdom",
+    wales: "United Kingdom",
+    scotland: "United Kingdom",
     "northern ireland": "United Kingdom",
     "england and wales": "United Kingdom",
-    "netherlands": "Netherlands",
+    netherlands: "Netherlands",
     "the netherlands": "Netherlands",
-    "us": "United States",
+    us: "United States",
     "u s": "United States",
-    "usa": "United States",
+    usa: "United States",
     "united states": "United States",
     "united states of america": "United States",
-    "uae": "United Arab Emirates",
+    uae: "United Arab Emirates",
     "u a e": "United Arab Emirates",
     "united arab emirates": "United Arab Emirates",
-    "ireland": "Ireland",
+    ireland: "Ireland",
     "republic of ireland": "Ireland",
     "hong kong": "Hong Kong",
     "hong kong sar": "Hong Kong",
     "hong kong s a r": "Hong Kong",
     "hong kong sar china": "Hong Kong",
     "czech republic": "Czechia",
-    "czechia": "Czechia",
+    czechia: "Czechia",
     "south korea": "South Korea",
     "republic of korea": "South Korea",
-    "turkey": "Türkiye",
-    "turkiye": "Türkiye"
-  }));
+    turkey: "Türkiye",
+    turkiye: "Türkiye",
+  }),
+);
 
 function chambersDirectoryCanonicalCountry(value) {
   const text = String(value || "")
@@ -394,21 +358,18 @@ function chambersDirectoryCanonicalCountry(value) {
   }
 
   return (
-    chambersDirectoryCountryAliases.get(
-      chambersDirectoryGeoKey(text)
-    ) || text
+    chambersDirectoryCountryAliases.get(chambersDirectoryGeoKey(text)) || text
   );
 }
 
 function chambersDirectoryCleanCity(country, city) {
-  const publicCountry =
-    chambersDirectoryCanonicalCountry(country);
+  const publicCountry = chambersDirectoryCanonicalCountry(country);
 
   let parts = String(city || "")
     .replace(/\s+/g, " ")
     .trim()
     .split(",")
-    .map(part => part.trim())
+    .map((part) => part.trim())
     .filter(Boolean);
 
   if (!parts.length) {
@@ -418,9 +379,8 @@ function chambersDirectoryCleanCity(country, city) {
   if (
     publicCountry &&
     parts.length &&
-    chambersDirectoryGeoKey(
-      chambersDirectoryCanonicalCountry(parts[0])
-    ) === chambersDirectoryGeoKey(publicCountry)
+    chambersDirectoryGeoKey(chambersDirectoryCanonicalCountry(parts[0])) ===
+      chambersDirectoryGeoKey(publicCountry)
   ) {
     parts.shift();
   }
@@ -429,9 +389,7 @@ function chambersDirectoryCleanCity(country, city) {
     publicCountry &&
     parts.length &&
     chambersDirectoryGeoKey(
-      chambersDirectoryCanonicalCountry(
-        parts[parts.length - 1]
-      )
+      chambersDirectoryCanonicalCountry(parts[parts.length - 1]),
     ) === chambersDirectoryGeoKey(publicCountry)
   ) {
     parts.pop();
@@ -456,14 +414,9 @@ function chambersDirectoryCleanCity(country, city) {
 }
 
 function chambersDirectoryLocationLabel(country, city) {
-  const publicCountry =
-    chambersDirectoryCanonicalCountry(country);
+  const publicCountry = chambersDirectoryCanonicalCountry(country);
 
-  const publicCity =
-    chambersDirectoryCleanCity(
-      publicCountry,
-      city
-    );
+  const publicCity = chambersDirectoryCleanCity(publicCountry, city);
 
   if (
     publicCountry &&
@@ -478,11 +431,10 @@ function chambersDirectoryLocationLabel(country, city) {
 }
 
 function addChambersOwnFields(chambers) {
-  const location =
-    chambersDirectoryLocationLabel(
-      chambers.head_office_country,
-      chambers.head_office_city
-    );
+  const location = chambersDirectoryLocationLabel(
+    chambers.head_office_country,
+    chambers.head_office_city,
+  );
 
   if (location) {
     chambers.locations.push(location);
@@ -490,7 +442,7 @@ function addChambersOwnFields(chambers) {
 }
 
 function addChambersLocationRows(rows) {
-  rows.forEach(row => {
+  rows.forEach((row) => {
     const chambers = findChambersForRow(row);
 
     if (!chambers) {
@@ -501,11 +453,10 @@ function addChambersLocationRows(rows) {
      * Only the structured city field belongs in
      * the Location filter.
      */
-    const location =
-      chambersDirectoryLocationLabel(
-        row.country,
-        row.city || ""
-      );
+    const location = chambersDirectoryLocationLabel(
+      row.country,
+      row.city || "",
+    );
 
     if (location) {
       chambers.locations.push(location);
@@ -518,7 +469,7 @@ function addChambersLocationRows(rows) {
 }
 
 function addChambersPracticeAreaRows(rows) {
-  rows.forEach(row => {
+  rows.forEach((row) => {
     const chambers = findChambersForRow(row);
 
     if (!chambers || !row.practice_area) {
@@ -530,7 +481,7 @@ function addChambersPracticeAreaRows(rows) {
 }
 
 function addChambersOpportunityRows(rows) {
-  rows.forEach(row => {
+  rows.forEach((row) => {
     const chambers = findChambersForRow(row);
 
     if (!chambers) {
@@ -538,7 +489,7 @@ function addChambersOpportunityRows(rows) {
     }
 
     const opportunity = normaliseOpportunityType(
-      row.scheme_type || row.scheme_name
+      row.scheme_type || row.scheme_name,
     );
 
     if (opportunity) {
@@ -548,7 +499,7 @@ function addChambersOpportunityRows(rows) {
 }
 
 function addChambersRankingRows(rows) {
-  rows.forEach(row => {
+  rows.forEach((row) => {
     const chambers = findChambersForRow(row);
 
     if (!chambers) {
@@ -575,17 +526,16 @@ function sortChambersRankings(rankings) {
       return secondYear - firstYear;
     }
 
-    return String(first?.practice_area || "")
-      .localeCompare(String(second?.practice_area || ""));
+    return String(first?.practice_area || "").localeCompare(
+      String(second?.practice_area || ""),
+    );
   });
 }
 
 function numericBand(value) {
   const match = String(value || "").match(/\d+/);
 
-  return match
-    ? Number(match[0])
-    : Number.POSITIVE_INFINITY;
+  return match ? Number(match[0]) : Number.POSITIVE_INFINITY;
 }
 
 function normaliseOpportunityType(value) {
@@ -595,10 +545,7 @@ function normaliseOpportunityType(value) {
     return "";
   }
 
-  if (
-    opportunity.includes("assessed") &&
-    opportunity.includes("mini")
-  ) {
+  if (opportunity.includes("assessed") && opportunity.includes("mini")) {
     return "assessed_mini_pupillage";
   }
 
@@ -614,10 +561,7 @@ function normaliseOpportunityType(value) {
     return "work_experience";
   }
 
-  if (
-    opportunity.includes("open day") ||
-    opportunity.includes("event")
-  ) {
+  if (opportunity.includes("open day") || opportunity.includes("event")) {
     return "open_day";
   }
 
@@ -629,44 +573,29 @@ function normaliseOpportunityType(value) {
     return "mentoring";
   }
 
-  return opportunity
-    .replaceAll(" ", "_")
-    .replaceAll("-", "_");
+  return opportunity.replaceAll(" ", "_").replaceAll("-", "_");
 }
 
 function populateChambersFilterOptions() {
   const locations = uniqueSorted(
-    chambersDirectoryState.chambers.flatMap(
-      chambers => chambers.locations
-    )
+    chambersDirectoryState.chambers.flatMap((chambers) => chambers.locations),
   );
 
   const circuits = uniqueSorted(
-    chambersDirectoryState.chambers.flatMap(
-      chambers => chambers.circuits
-    )
+    chambersDirectoryState.chambers.flatMap((chambers) => chambers.circuits),
   );
 
   const practiceAreas = uniqueSorted(
     chambersDirectoryState.chambers.flatMap(
-      chambers => chambers.practiceAreas
-    )
+      (chambers) => chambers.practiceAreas,
+    ),
   );
 
-  addChambersSelectOptions(
-    chambersDirectoryElements.location,
-    locations
-  );
+  addChambersSelectOptions(chambersDirectoryElements.location, locations);
 
-  addChambersSelectOptions(
-    chambersDirectoryElements.circuit,
-    circuits
-  );
+  addChambersSelectOptions(chambersDirectoryElements.circuit, circuits);
 
-  addChambersSelectOptions(
-    chambersDirectoryElements.practice,
-    practiceAreas
-  );
+  addChambersSelectOptions(chambersDirectoryElements.practice, practiceAreas);
 }
 
 function addChambersSelectOptions(selectElement, values) {
@@ -674,7 +603,7 @@ function addChambersSelectOptions(selectElement, values) {
     return;
   }
 
-  values.forEach(value => {
+  values.forEach((value) => {
     const option = document.createElement("option");
 
     option.value = value;
@@ -686,26 +615,22 @@ function addChambersSelectOptions(selectElement, values) {
 
 function applyChambersFilters() {
   const searchTerm = normaliseText(
-    chambersDirectoryElements.search?.value || ""
+    chambersDirectoryElements.search?.value || "",
   );
 
-  const selectedLocation =
-    chambersDirectoryElements.location?.value || "";
+  const selectedLocation = chambersDirectoryElements.location?.value || "";
 
-  const selectedCircuit =
-    chambersDirectoryElements.circuit?.value || "";
+  const selectedCircuit = chambersDirectoryElements.circuit?.value || "";
 
-  const selectedPractice =
-    chambersDirectoryElements.practice?.value || "";
+  const selectedPractice = chambersDirectoryElements.practice?.value || "";
 
   const selectedOpportunity =
     chambersDirectoryElements.opportunity?.value || "";
 
-  const selectedSort =
-    chambersDirectoryElements.sort?.value || "az";
+  const selectedSort = chambersDirectoryElements.sort?.value || "az";
 
   chambersDirectoryState.filteredChambers =
-    chambersDirectoryState.chambers.filter(chambers => {
+    chambersDirectoryState.chambers.filter((chambers) => {
       const searchableText = normaliseText(
         [
           getChambersName(chambers),
@@ -716,32 +641,28 @@ function applyChambersFilters() {
           ...chambers.circuits,
           ...chambers.practiceAreas,
           ...chambers.opportunities,
-          ...chambers.rankings.flatMap(ranking => [
+          ...chambers.rankings.flatMap((ranking) => [
             ranking.ranking_source,
             ranking.ranking_name,
             ranking.ranking_band,
             ranking.practice_area,
-            ranking.circuit_or_region
-          ])
+            ranking.circuit_or_region,
+          ]),
         ]
           .filter(Boolean)
-          .join(" ")
+          .join(" "),
       );
 
-      const matchesSearch =
-        !searchTerm || searchableText.includes(searchTerm);
+      const matchesSearch = !searchTerm || searchableText.includes(searchTerm);
 
       const matchesLocation =
-        !selectedLocation ||
-        chambers.locations.includes(selectedLocation);
+        !selectedLocation || chambers.locations.includes(selectedLocation);
 
       const matchesCircuit =
-        !selectedCircuit ||
-        chambers.circuits.includes(selectedCircuit);
+        !selectedCircuit || chambers.circuits.includes(selectedCircuit);
 
       const matchesPractice =
-        !selectedPractice ||
-        chambers.practiceAreas.includes(selectedPractice);
+        !selectedPractice || chambers.practiceAreas.includes(selectedPractice);
 
       const matchesOpportunity =
         !selectedOpportunity ||
@@ -756,10 +677,7 @@ function applyChambersFilters() {
       );
     });
 
-  sortChambers(
-    chambersDirectoryState.filteredChambers,
-    selectedSort
-  );
+  sortChambers(chambersDirectoryState.filteredChambers, selectedSort);
 
   renderChambersDirectory();
 }
@@ -774,13 +692,9 @@ function sortChambers(chambers, sortValue) {
     }
 
     if (sortValue === "ranking") {
-      const firstBand = numericBand(
-        first.rankings?.[0]?.ranking_band
-      );
+      const firstBand = numericBand(first.rankings?.[0]?.ranking_band);
 
-      const secondBand = numericBand(
-        second.rankings?.[0]?.ranking_band
-      );
+      const secondBand = numericBand(second.rankings?.[0]?.ranking_band);
 
       if (firstBand !== secondBand) {
         return firstBand - secondBand;
@@ -796,30 +710,22 @@ function renderChambersDirectory() {
     return;
   }
 
-  chambersDirectoryElements.loading?.classList.add(
-    "hidden"
-  );
+  chambersDirectoryElements.loading?.classList.add("hidden");
 
-  chambersDirectoryElements.error?.classList.add(
-    "hidden"
-  );
+  chambersDirectoryElements.error?.classList.add("hidden");
 
-  const totalChambers =
-    chambersDirectoryState.chambers.length;
+  const totalChambers = chambersDirectoryState.chambers.length;
 
-  const visibleChambers =
-    chambersDirectoryState.filteredChambers.length;
+  const visibleChambers = chambersDirectoryState.filteredChambers.length;
 
   if (chambersDirectoryElements.count) {
     if (totalChambers === 0) {
       chambersDirectoryElements.count.textContent =
         "No verified chambers profiles added yet";
     } else if (visibleChambers === totalChambers) {
-      chambersDirectoryElements.count.textContent =
-        `${totalChambers} chambers`;
+      chambersDirectoryElements.count.textContent = `${totalChambers} chambers`;
     } else {
-      chambersDirectoryElements.count.textContent =
-        `${visibleChambers} of ${totalChambers} chambers`;
+      chambersDirectoryElements.count.textContent = `${visibleChambers} of ${totalChambers} chambers`;
     }
   }
 
@@ -839,35 +745,26 @@ function renderChambersDirectory() {
           <span>Verified profiles will appear here as they are completed.</span>
         `;
 
-      chambersDirectoryElements.empty.classList.remove(
-        "hidden"
-      );
+      chambersDirectoryElements.empty.classList.remove("hidden");
     }
 
     return;
   }
 
-  chambersDirectoryElements.empty?.classList.add(
-    "hidden"
-  );
+  chambersDirectoryElements.empty?.classList.add("hidden");
 
   chambersDirectoryElements.list.innerHTML =
-    chambersDirectoryState.filteredChambers
-      .map(createChambersCard)
-      .join("");
+    chambersDirectoryState.filteredChambers.map(createChambersCard).join("");
 
   loadChambersCardLogos();
 }
 
 function createChambersCard(chambers) {
-  const chambersName =
-    getChambersName(chambers) ||
-    "Barristers’ chambers";
+  const chambersName = getChambersName(chambers) || "Barristers’ chambers";
 
   const chamberMark = getChambersMark(chambers);
 
-  const logoCandidates =
-    getOfficialLogoCandidates(chambers);
+  const logoCandidates = getOfficialLogoCandidates(chambers);
 
   const logo = `
     <img
@@ -875,9 +772,7 @@ function createChambersCard(chambers) {
       alt=""
       loading="lazy"
       referrerpolicy="no-referrer"
-      data-logo-candidates="${escapeHtml(
-        logoCandidates.join("|")
-      )}"
+      data-logo-candidates="${escapeHtml(logoCandidates.join("|"))}"
       hidden
     >
 
@@ -889,25 +784,17 @@ function createChambersCard(chambers) {
     </span>
   `;
 
-  const location =
-    chambers.locations[0] ||
-    "Location being researched";
+  const location = chambers.locations[0] || "Location being researched";
 
-  const rankingText =
-    getCompactChambersRankingText(
-      chambers.rankings
-    );
+  const rankingText = getCompactChambersRankingText(chambers.rankings);
 
-  const opportunityText =
-    getChambersOpportunityText(
-      chambers.opportunities
-    );
+  const opportunityText = getChambersOpportunityText(chambers.opportunities);
 
   return `
     <a
       class="firm-card"
       href="chamber-profile.html?id=${encodeURIComponent(
-        chambers.organisation_id
+        chambers.organisation_id,
       )}"
       aria-label="View ${escapeHtml(chambersName)} profile"
     >
@@ -956,16 +843,14 @@ function getOfficialLogoCandidates(chambers) {
 
   if (chambers.website_url) {
     try {
-      const origin = new URL(
-        chambers.website_url
-      ).origin;
+      const origin = new URL(chambers.website_url).origin;
 
       candidates.push(
         `${origin}/favicon.svg`,
         `${origin}/apple-touch-icon.png`,
         `${origin}/apple-touch-icon-precomposed.png`,
         `${origin}/favicon.png`,
-        `${origin}/favicon.ico`
+        `${origin}/favicon.ico`,
       );
     } catch (error) {
       // The abbreviation remains visible.
@@ -978,30 +863,20 @@ function getOfficialLogoCandidates(chambers) {
 function loadChambersCardLogos() {
   const images =
     chambersDirectoryElements.list?.querySelectorAll(
-      ".chambers-card-logo-image"
+      ".chambers-card-logo-image",
     ) || [];
 
-  images.forEach(image => {
-    const candidates = String(
-      image.dataset.logoCandidates || ""
-    )
+  images.forEach((image) => {
+    const candidates = String(image.dataset.logoCandidates || "")
       .split("|")
-      .map(value => value.trim())
+      .map((value) => value.trim())
       .filter(Boolean);
 
-    tryChambersLogoCandidate(
-      image,
-      candidates,
-      0
-    );
+    tryChambersLogoCandidate(image, candidates, 0);
   });
 }
 
-function tryChambersLogoCandidate(
-  image,
-  candidates,
-  index
-) {
+function tryChambersLogoCandidate(image, candidates, index) {
   if (!image || index >= candidates.length) {
     return;
   }
@@ -1021,11 +896,7 @@ function tryChambersLogoCandidate(
   image.onerror = () => {
     image.removeAttribute("src");
 
-    tryChambersLogoCandidate(
-      image,
-      candidates,
-      index + 1
-    );
+    tryChambersLogoCandidate(image, candidates, index + 1);
   };
 
   image.src = candidate;
@@ -1038,10 +909,7 @@ function getCompactChambersRankingText(rankings) {
     return "Ranking not yet listed";
   }
 
-  const area =
-    ranking.practice_area ||
-    ranking.ranking_name ||
-    "";
+  const area = ranking.practice_area || ranking.ranking_name || "";
 
   if (ranking.ranking_position) {
     return area
@@ -1050,26 +918,16 @@ function getCompactChambersRankingText(rankings) {
   }
 
   if (ranking.ranking_band) {
-    return area
-      ? `${ranking.ranking_band} in ${area}`
-      : ranking.ranking_band;
+    return area ? `${ranking.ranking_band} in ${area}` : ranking.ranking_band;
   }
 
-  return area
-    ? `Ranked in ${area}`
-    : "Chambers UK ranked";
+  return area ? `Ranked in ${area}` : "Chambers UK ranked";
 }
 
 function getChambersMark(chambers) {
-  const shortName = String(
-    chambers.short_name || ""
-  ).trim();
+  const shortName = String(chambers.short_name || "").trim();
 
-  if (
-    shortName &&
-    !shortName.includes(" ") &&
-    shortName.length <= 6
-  ) {
+  if (shortName && !shortName.includes(" ") && shortName.length <= 6) {
     return shortName.toUpperCase();
   }
 
@@ -1078,20 +936,16 @@ function getChambersMark(chambers) {
   const words = String(source || "")
     .replace(/[’']/g, "")
     .split(/[\s-]+/)
-    .map(word => word.trim())
+    .map((word) => word.trim())
     .filter(Boolean)
-    .filter(word => {
-      return ![
-        "the",
-        "of",
-        "and",
-        "chambers",
-        "barristers"
-      ].includes(word.toLowerCase());
+    .filter((word) => {
+      return !["the", "of", "and", "chambers", "barristers"].includes(
+        word.toLowerCase(),
+      );
     });
 
   const mark = words
-    .map(word => {
+    .map((word) => {
       const leadingNumber = word.match(/^\d+/);
 
       if (leadingNumber) {
@@ -1099,10 +953,7 @@ function getChambersMark(chambers) {
           .slice(leadingNumber[0].length)
           .replace(/[^a-zA-Z]/g, "");
 
-        return (
-          leadingNumber[0] +
-          (letters ? letters.charAt(0) : "")
-        );
+        return leadingNumber[0] + (letters ? letters.charAt(0) : "");
       }
 
       return word.replace(/[^a-zA-Z0-9]/g, "").charAt(0);
@@ -1132,9 +983,7 @@ function getChambersOpportunityText(opportunities) {
     return "Pupillage information available";
   }
 
-  if (
-    opportunities.includes("assessed_mini_pupillage")
-  ) {
+  if (opportunities.includes("assessed_mini_pupillage")) {
     return "Assessed mini-pupillage";
   }
 
@@ -1147,6 +996,46 @@ function getChambersOpportunityText(opportunities) {
   }
 
   return "Opportunities being researched";
+}
+
+function ensureSupportingChambersData() {
+  if (chambersDirectoryState.supportingDataLoaded) {
+    return chambersDirectoryState.supportingDataPromise || Promise.resolve();
+  }
+
+  if (!chambersDirectoryState.supportingDataPromise) {
+    chambersDirectoryState.supportingDataPromise = loadSupportingChambersData()
+      .then(() => {
+        chambersDirectoryState.supportingDataLoaded = true;
+        populateChambersFilterOptions();
+        applyChambersFilters();
+      })
+      .catch((error) => {
+        chambersDirectoryState.supportingDataPromise = null;
+        console.warn(
+          "Optional chambers directory filters could not be loaded:",
+          error,
+        );
+      });
+  }
+
+  return chambersDirectoryState.supportingDataPromise;
+}
+
+function connectChambersAdvancedFilterLoading() {
+  [
+    chambersDirectoryElements.location,
+    chambersDirectoryElements.circuit,
+    chambersDirectoryElements.practice,
+    chambersDirectoryElements.opportunity,
+  ].forEach((element) => {
+    element?.addEventListener("focus", ensureSupportingChambersData, {
+      once: true,
+    });
+    element?.addEventListener("pointerdown", ensureSupportingChambersData, {
+      once: true,
+    });
+  });
 }
 
 function clearChambersFilters() {
@@ -1179,17 +1068,11 @@ function clearChambersFilters() {
 }
 
 function showChambersDirectoryError() {
-  chambersDirectoryElements.loading?.classList.add(
-    "hidden"
-  );
+  chambersDirectoryElements.loading?.classList.add("hidden");
 
-  chambersDirectoryElements.empty?.classList.add(
-    "hidden"
-  );
+  chambersDirectoryElements.empty?.classList.add("hidden");
 
-  chambersDirectoryElements.error?.classList.remove(
-    "hidden"
-  );
+  chambersDirectoryElements.error?.classList.remove("hidden");
 
   if (chambersDirectoryElements.count) {
     chambersDirectoryElements.count.textContent =
@@ -1202,12 +1085,10 @@ function uniqueSorted(values) {
     ...new Set(
       values
         .filter(Boolean)
-        .map(value => String(value).trim())
-        .filter(Boolean)
-    )
-  ].sort((first, second) =>
-    first.localeCompare(second)
-  );
+        .map((value) => String(value).trim())
+        .filter(Boolean),
+    ),
+  ].sort((first, second) => first.localeCompare(second));
 }
 
 function normaliseText(value) {
