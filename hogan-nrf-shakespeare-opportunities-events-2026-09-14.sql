@@ -1,0 +1,46 @@
+-- Vacatory canonical content update
+-- Date applied: 2026-09-14
+-- Firms checked:
+-- - Hogan Lovells Cadwalader
+-- - Norton Rose Fulbright
+-- - Shakespeare Martineau (Ampa)
+--
+-- Scope:
+-- - Added current/upcoming official student opportunities for Hogan Lovells Cadwalader.
+-- - Added current/upcoming official student events for Hogan Lovells Cadwalader.
+-- - Added current/upcoming official student opportunities for Norton Rose Fulbright.
+-- - Added current/upcoming official student events for Norton Rose Fulbright.
+-- - Checked scholarships: no current verified official student scholarship was added.
+-- - Checked Shakespeare Martineau: no current official student opportunity, event or scholarship was added; closed items were left out.
+--
+-- Important implementation note:
+-- Opportunities were added to the canonical career_opportunities / career_opportunity_cycles structure.
+-- Matching non-event records were also added to firm_programmes so the current public Deadlines page can display them.
+-- Events were not added to firm_programmes, so they remain event-only and do not appear as application deadlines.
+--
+-- Primary official sources checked:
+-- Hogan Lovells Cadwalader:
+-- - https://ukearlycareers.hlc.com/what-we-offer/training-contracts
+-- - https://ukearlycareers.hlc.com/what-we-offer/vacation-schemes
+-- - https://ukearlycareers.hlc.com/what-we-offer/lift-off
+-- - https://ukearlycareers.hlc.com/what-we-offer/first-year-insight-scheme
+-- - https://ukearlycareers.hlc.com/what-we-offer/solicitor-apprenticeship
+-- - https://ukearlycareers.hlc.com/what-we-offer/campus-ambassadors
+-- - https://ukearlycareers.hlc.com/events
+--
+-- Norton Rose Fulbright:
+-- - https://www.nortonrosefulbright.com/en-gb/graduates/apply
+-- - https://www.nortonrosefulbright.com/en-gb/graduates/opportunities/rise
+-- - https://www.nortonrosefulbright.com/en-gb/graduates/opportunities/vacation-schemes
+-- - https://www.nortonrosefulbright.com/en-gb/graduates/opportunities/apprenticeship
+-- - https://www.nortonrosefulbright.com/en-gb/graduates/opportunities/blogs
+-- - https://www.nortonrosefulbright.com/en-gb/graduates/opportunities/open-days
+--
+-- Shakespeare Martineau / Ampa:
+-- - https://careers.ampa.co.uk/en/shma
+-- - https://www.shma.co.uk/careers/
+--
+-- Verification summary after applying:
+-- - Hogan Lovells Cadwalader: 8 opportunity records and 14 event records.
+-- - Norton Rose Fulbright: 7 opportunity records and 5 event records.
+-- - Shakespeare Martineau: 0 current official student opportunity/event/scholarship records added.
