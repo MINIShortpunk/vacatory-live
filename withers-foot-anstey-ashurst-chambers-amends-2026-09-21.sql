@@ -1,0 +1,57 @@
+-- Vacatory canonical data update backup
+-- Applied to Supabase project vac-attack (qusyglgevgyjaoasmjhz) on 21 September 2026.
+-- Scope: Withers, Burges Salmon, Foot Anstey, Ashurst Perkins Coie, Essex Court Chambers,
+-- 6KBW College Hill, One Essex Court and Cross-Chambers Mentoring Scheme.
+
+-- Rules applied:
+-- - Ongoing is reserved for evergreen/general opportunities with no fixed deadline.
+-- - Upcoming is used for future opportunities/events with a verified future date/window.
+-- - Finished, closed, stale or no-current-dates-published records should be deleted rather than archived.
+-- - Events/open days are kept out of firm_programmes/firm_programme_cycles so they do not appear on Deadlines.
+
+-- Verified public deadline/opportunity rows added or updated:
+-- Withers:
+-- - Singapore Summer Internship 2027: open; closes 28 February 2027; May-July 2027 monthly four-week internships.
+-- - WithUs Mentorship Program 2027: open; detailed key dates close 31 October 2026; programme January-June 2027.
+--   Note: source header shows 2026-12-31, but the detailed key dates state 31 October 2026.
+--
+-- Burges Salmon:
+-- - Student Inspiration Day 2027: event only; Bristol, 11 March 2027, 10:00-16:00; no closing date published.
+--
+-- Foot Anstey:
+-- - Achieve Vacation Scheme England & Wales 2027: 5 October-18 December 2026; w/c 5 April 2027.
+-- - Aspire Vacation Scheme England & Wales 2027: 5 October-18 December 2026; w/c 21 June 2027.
+-- - Direct Training Contract England & Wales 2027: 2 November 2026-1 March 2027.
+-- - Legal Apprenticeship 2027: 5 October 2026-15 February 2027.
+-- - Direct Training Contract Northern Ireland 2027: 7 September-23 October 2026; September 2027 start.
+-- - Aspire Vacation Scheme Northern Ireland 2027: 2 November 2026-1 March 2027; w/c 7 June 2027.
+-- - Accelerate Programme Northern Ireland 2027: opens January 2027, exact day not published; paid June internship
+--   plus £500 at the start of second year and £500 at the start of third year.
+-- - Student-facing events added as canonical event records only:
+--   13 Oct 2026 NI virtual insight; 14 Oct 2026 England & Wales; 22 Oct 2026 Apprenticeship Special;
+--   27 Oct 2026 general virtual session.
+--
+-- Ashurst Perkins Coie:
+-- - Solicitor Apprenticeship stale 2027 upcoming record removed from firm deadline tables:
+--   official page says no 2027 recruitment planned; check back early winter 2027 for 2028.
+-- - Winter Vacation Scheme stale upcoming record removed from firm deadline tables:
+--   applications closed 11 September 2026 at 12 noon.
+-- - Summer Vacation Scheme 2027 added: applications 28 September-11 December 2026 at 12 noon.
+--   Conflict preserved: official live page gives scheme dates as 28 June-16 July 2026, incompatible with the
+--   2026/27 application chronology. No corrected scheme year was inferred.
+--
+-- Chambers / Bar events:
+-- - Essex Court Chambers Pupillage Open Day: 26 November 2026, approx. 18:30-20:30; applications close
+--   4pm 19 October 2026; event only.
+-- - 6KBW College Hill Pupillage Open Evening: 2 December 2026, 17:30-19:30; hybrid/free; event only.
+-- - One Essex Court Women at the Commercial Bar Programme event records:
+--   15 October 2026 Advocacy Skills Talk/Q&A; 3 December 2026 Moot; 11 February 2027 Pupillage Interview Workshop.
+-- - Cross-Chambers Mentoring Scheme 2026-27: one shared canonical provider/programme record, not duplicated
+--   across participating sets; applications close 9 October 2026 at 23:59.
+
+-- Connector caveat:
+-- The Supabase connector accepted updates to legal_organisations, career_opportunities, firm_programmes
+-- and firm_programme_cycles. It repeatedly rejected direct inserts/deletes against career_opportunity_cycles
+-- with INVALID_ARGUMENT and no database detail. For that reason, event opportunity shells were added and
+-- stale canonical event placeholders were suppressed where possible, while firm_programmes/firm_programme_cycles
+-- were fully updated/deleted for public Deadlines.
