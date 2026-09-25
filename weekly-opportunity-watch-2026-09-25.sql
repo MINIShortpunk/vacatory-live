@@ -1,0 +1,151 @@
+-- Vacatory Weekly Opportunity Watch backup
+-- Applied to Supabase project vac-attack (qusyglgevgyjaoasmjhz)
+-- Date applied: 2026-09-25
+--
+-- Commit summary:
+-- Refresh weekly opportunity watch deadlines and events
+--
+-- Official-source updates applied:
+--
+-- 1. CMS Scotland Insight Programme
+--    Source: https://cmsemergingtalent.com/programmes/scotland/insight-programme/
+--    Applications: 2027-01-29 to 2027-02-08.
+--    Programme: 2027-05-24 to 2027-05-28.
+--    Locations: Aberdeen, Edinburgh and Glasgow.
+--    Audience: second-year LLB and first-year accelerated LLB students.
+--    Pay/support: National Living Wage; travel support may be considered case-by-case; no accommodation support.
+--    Progression: successful participants may be fast-tracked to a Training Contract assessment day.
+--
+-- 2. CMS Scotland Training Contract
+--    Source: https://cmsemergingtalent.com/programmes/scotland/training-contract/
+--    Applications: open from 2026-09-24 and close 2027-01-10.
+--    Locations: Aberdeen, Edinburgh and Glasgow.
+--    Salary/support: £33,000 first year, £35,000 second year, £68,000 NQ; DPLP sponsored plus £13,000 maintenance grant.
+--
+-- 3. 6KBW College Hill Advocacy Competition 2026
+--    Source: https://6kbw.com/recruitment/pupillage/
+--    Entry closes: 2026-10-02.
+--    First round: 2026-10-29, remote on Teams.
+--    Second round: 2026-11-23 at the Old Bailey.
+--    Audience: aspiring legal professionals; law/GDL/Bar study is not required.
+--    Prize: mini-pupillage.
+--    Added as a distinct competition record, separate from Essay Competition and Bridging the Bar Advocacy Course.
+--
+-- 4. St Ives Chambers Cooper Lohmus Prize
+--    Source: https://stiveschambers.co.uk/cooper-lohmus-prize/
+--    Updated to month-only final date: January 2027.
+--    Exact January day and application/round dates remain unpublished.
+--    Each finalist receives a mini-pupillage.
+--
+-- 5. Slaughter and May Virtual Insight Afternoons
+--    Source: https://www.slaughterandmay.com/careers/early-careers/work-experience-opportunities/virtual-insight-afternoons/
+--    October session: 2026-10-28.
+--    Registration closes: 2026-10-21.
+--    September session is full and registration has closed.
+--    Stored as an event record; removed from firm_programmes/deadline source.
+--
+-- 6. Slaughter and May Solicitor Apprenticeship Application Q&A
+--    Source conflict reviewed:
+--    - General Meet us page shows 2026-11-03, 17:00-18:00.
+--    - Dedicated Solicitor Apprenticeship page reportedly shows 2026-11-04, 17:00-18:00.
+--    No date change was made until the conflict is resolved by Slaughter and May.
+--
+-- 7. Linklaters Singapore Alternative Training Contract (Singapore Qualified)
+--    Source: https://www.linklaters.com/zh-sg/careers/early-careers/your-application
+--    Current March 2027 cycle updated on the existing Singapore-qualified route.
+--    Applications: 2026-08-24 to 2026-10-09.
+--    Programme: training contract starts March 2027.
+--    Eligibility: currently completing a 12-month Singapore practice training contract and expected to qualify around Dec 2026-Jan 2027.
+--
+-- 8. Mills & Reeve Solicitor Degree Apprenticeship
+--    Source: https://www.mills-reeve.com/careers/emerging-talent-be-part-of-it/solicitor-degree-apprenticeships/
+--    Applications: 2026-10-12 to 2027-02-18.
+--    Assessment centres: 2027-03-15 to 2027-03-19.
+--    Start: September 2027.
+--    Offices: Birmingham, Manchester and Norwich.
+--    Eligibility note: minimum five GCSEs at 5/C including English and Maths, BBB/120 UCAS points, and UK work rights.
+--
+-- 9. TLT Virtual Open Evenings
+--    Sources:
+--    - https://apply.tlt.com/vacancies/6062/tlt_virtual_open_evening_2026/
+--    - https://apply.tlt.com/vacancies/6064/from_sixth_form_to_solicitor_the_tlt_apprenticeship_journey_virtual_open_evening_2026/
+--    Trainee Open Evening: 2026-11-10, 16:30-18:30; registration closes 2026-10-30.
+--    Solicitor Apprenticeship Open Evening: 2027-02-08, 17:30-19:00; registration closes 2027-02-01.
+--    Stored as event records; removed from firm_programmes/deadline source.
+--
+-- 10. Brodies Summer Placement 2027
+--     Source: https://brodies.com/careers/careers-at-brodies/summer-placements/
+--     Applications open: 2026-11-02 at midday.
+--     Applications close: 2027-01-04 at midday.
+--     No timezone added because Brodies does not state one.
+--
+-- 11. Eversheds Sutherland — Georgetown LL.M. Extern – Tax Controversy
+--     General programme source:
+--     https://www.eversheds-sutherland.com/en/united-states/careers/careers-page/students-and-recent-graduates/us-llm-extern-program
+--     Live role/application source:
+--     https://florecruit.com/v2/app/eversheds-sutherland/jobs/MjU0MTR-ZWY4UW84RnB2Z0NWV2p2eDlyNXl1SFZWaWVBb1Ro/apply
+--     Role: Georgetown LL.M. Extern – Tax Controversy, Washington, DC 260915.
+--     Office: Washington, D.C.
+--     Position: Extern.
+--     Department: Tax.
+--     Applications close: 2026-10-30 at 23:59 GMT.
+--     Scope: extern role for law students/LL.M. students interested in federal tax controversy,
+--     tax administration and dispute resolution.
+--
+-- 12. Eversheds Sutherland — Georgetown LL.M. Extern – Employee Benefits & Executive Compensation
+--     General programme source:
+--     https://www.eversheds-sutherland.com/en/united-states/careers/careers-page/students-and-recent-graduates/us-llm-extern-program
+--     Live role/application source:
+--     https://florecruit.com/v2/app/eversheds-sutherland/jobs/MjU0MTZ-a2g0emdoWXhiY3hURlQ3QnN4TndhYlNZWWFHOGVt/apply
+--     Role: Georgetown LL.M. Extern - Employee Benefits & Executive Compensation - Washington, DC 260715.
+--     Office: Washington, D.C.
+--     Position: Extern.
+--     Department: Tax.
+--     Applications close: 2026-11-01 at 23:59 GMT.
+--     Scope: extern role for Georgetown LL.M. students interested in employee benefits,
+--     executive compensation, tax law, labour and employment law, and corporate transactions.
+--
+-- 13. Eversheds Sutherland — NYU LL.M. State & Local Tax Legal Intern
+--     General programme source:
+--     https://www.eversheds-sutherland.com/en/united-states/careers/careers-page/students-and-recent-graduates/us-llm-extern-program
+--     Live role/application source:
+--     https://florecruit.com/v2/app/eversheds-sutherland/jobs/MjY1NzN-TWNRRnkxa3hReXl6bTVZdUR5b25Va05ENzlxOEgz/apply
+--     Role: NYU LLM State & Local Tax Legal Intern 260908.
+--     Office: New York, New York.
+--     Position: Legal Intern.
+--     Department: Tax.
+--     Applications: open; no closing date published on the live role page.
+--     Scope: part-time legal intern role for current Tax LL.M. students interested in state and local tax.
+--     Time commitment: 10–15 hours per week throughout the Fall semester, with potential opportunity to extend through Spring semester.
+--
+-- 14. Eversheds Sutherland — Hong Kong Student Award
+--     Source:
+--     https://www.eversheds-sutherland.com/en/asia/careers/careers-page/students-and-recent-graduates/eversheds-sutherland-hong-kong-student-award
+--     Type: scholarship / bursary / student award.
+--     Applications: March to April each year.
+--     Stored next annual window: 2027-03-01 to 2027-04-30 with month-level precision.
+--     Exact 2027 opening/closing days are not published, so no exact day has been invented.
+--     Scope: supports talented first-year undergraduate law students from underprivileged backgrounds in Hong Kong through financial support and work experience.
+--     Eligible universities: The Chinese University of Hong Kong, City University of Hong Kong and The University of Hong Kong.
+--     Student stage: first-year LLB or LLB double-degree student.
+--
+-- 15. Eversheds Sutherland — Asia / Hong Kong trainee recruitment process
+--     Source:
+--     https://www.eversheds-sutherland.com/en/Asia/careers/careers-page/students-and-recent-graduates/recruitment-process
+--     Type: recruitment-process and application guidance, not a deadline opportunity.
+--     Added as firm research section: hong-kong-recruitment-process.
+--     Captures: GPA/2:1 expectations, law/JD/CPE background, language preferences,
+--     selection criteria, video interview, face-to-face interview, written assessment
+--     and Law Society of Hong Kong code note.
+--     Historic 2025/2026 key dates on the page were not used to update current deadlines.
+--
+-- Cleanup/verification:
+-- - Deleted stale placeholder cycles for CMS Scotland Insight, CMS Scotland Training Contract and Linklaters Singapore Alternative TC.
+-- - Deleted event/open-day rows from firm_programmes for Slaughter and May Virtual Insight Afternoons and TLT Open Evenings, so these do not appear as deadline records.
+-- - Verified updated firm records have one current cycle each.
+-- - Verified targeted event deadline-source duplicates remaining: 0.
+-- - Updated the existing Eversheds Sutherland US LLM Extern Program row rather than creating a duplicate opportunity.
+-- - Added a separate current Eversheds Sutherland extern role for Employee Benefits & Executive Compensation.
+-- - Added a separate current Eversheds Sutherland legal intern role for NYU LL.M. State & Local Tax, with no invented deadline.
+-- - Updated the existing Eversheds Sutherland Hong Kong Student Award record as scholarship_bursary with March-April annual timing.
+-- - Added official Eversheds Sutherland Asia recruitment-process guidance as a public firm research section without creating a new opportunity/deadline.
