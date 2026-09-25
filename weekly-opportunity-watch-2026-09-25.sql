@@ -139,6 +139,29 @@
 --     and Law Society of Hong Kong code note.
 --     Historic 2025/2026 key dates on the page were not used to update current deadlines.
 --
+-- 16. Eversheds Sutherland — UK student and graduate events
+--     Sources:
+--     https://www.eversheds-sutherland.com/en/United-Kingdom/careers/careers-page/students-and-recent-graduates/events
+--     https://eversheds-sutherland.grad.allhires.com/app/
+--     Type: student/graduate events; these remain event records, not deadline-page opportunity records.
+--     Updated Undergraduate & Graduate Insight Evenings:
+--       registration closes 2026-10-30 at 23:59.
+--       Nottingham 3 Nov 2026, 17:30-20:00; Newcastle 5 Nov 2026, 11:00-13:30;
+--       Leeds 10 Nov 2026, 17:30-20:00; Birmingham 11 Nov 2026, 17:30-20:00;
+--       Manchester 17 Nov 2026, 17:30-20:00; London 24 Nov 2026, 17:30-20:00;
+--       Cambridge 26 Nov 2026, 17:30-20:00; Cardiff date TBC for November 2026.
+--     Updated Year 12 & 13 Virtual Insight Evening: registration closes 2026-11-02 at 23:59;
+--       exact event date is not published on the current official page.
+--     Updated First Year Law / Second Year Non-Law Virtual Open Day: registration closes 2027-03-02 at 23:59;
+--       exact event date is not published on the current official page.
+--     Updated Edinburgh Graduate Insight Evening: registration closes 2027-04-25 at 23:59;
+--       exact event date is not published on the current official page.
+--     Suppressed duplicate uk-insight-evenings-2026 record in favour of canonical
+--       undergraduate-graduate-insight-evening record.
+--     Follow-up cleanup: duplicate uk-insight-evenings-2026 record and its route link
+--       were fully deleted. No remaining Eversheds student-event rows with past event dates
+--       were found as of 2026-09-25.
+--
 -- Cleanup/verification:
 -- - Deleted stale placeholder cycles for CMS Scotland Insight, CMS Scotland Training Contract and Linklaters Singapore Alternative TC.
 -- - Deleted event/open-day rows from firm_programmes for Slaughter and May Virtual Insight Afternoons and TLT Open Evenings, so these do not appear as deadline records.
@@ -149,3 +172,5 @@
 -- - Added a separate current Eversheds Sutherland legal intern role for NYU LL.M. State & Local Tax, with no invented deadline.
 -- - Updated the existing Eversheds Sutherland Hong Kong Student Award record as scholarship_bursary with March-April annual timing.
 -- - Added official Eversheds Sutherland Asia recruitment-process guidance as a public firm research section without creating a new opportunity/deadline.
+-- - Updated canonical Eversheds UK student/graduate event cycles and suppressed the duplicate UK Insight Evenings event row.
+-- - Fully deleted the duplicate Eversheds UK Insight Evenings event row; verified no dated past Eversheds student events remain.
