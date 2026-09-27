@@ -52,3 +52,29 @@
 -- Additional research_change_log entries:
 --   - 0b1226ff-687f-4a3f-9a77-30723d645f01
 --   - e2ef497f-173d-452d-ba66-1d71216ac882
+
+-- Full 50 chambers website + LinkedIn/social follow-up, same date:
+-- User challenged whether the earlier check included a full LinkedIn and website pass. It did not.
+-- A further full sweep was then completed across the 50 canonical chambers using official chambers pages as the authority
+-- and LinkedIn/social/search results only as discovery or cross-check evidence.
+--
+-- Further canonical changes made directly in Supabase:
+--   - Henderson Chambers: added the missing September-December 2027 mini-pupillage window and added the official midday deadline time
+--     to the January-April, May-July and September-December 2027 mini-pupillage cycles.
+--   - Maitland Chambers: added the official 4:00pm deadline time to the May-July 2027 mini-pupillage cycle.
+--   - One Essex Court: attached current dated cycles to the Women at the Commercial Bar advocacy skills session, moot and pupillage
+--     interview workshop records, including the 5 October 2026 moot team-registration deadline.
+--   - Brick Court Chambers: corrected the Student Open Day source URL to the current official events-and-sponsorship page.
+--   - Landmark Chambers: added the Property Moot Competition 2026-27 and the Richard Drabble KC Essay Prize in Human Rights Law 2026.
+--
+-- Confirmed non-adds from the LinkedIn/social follow-up:
+--   - 39 Essex Chambers mini-pupillage was verified against the official page, but its application deadline had already passed on
+--     9 September 2026, so it was not added as a current open opportunity.
+--   - Pump Court Tax Chambers competition material was historic/concluded, so no current public record was added.
+--   - LinkedIn posts that were personal acceptance announcements, stale recruitment posts, duplicated existing records or unsupported
+--     by an official current page were not used to create new Vacatory records.
+--
+-- Follow-up research_change_log entries:
+--   - bdddbdf8-24ed-4d3a-b16c-8927d74156bc
+--   - cc34ac90-790a-407b-b17f-f652ce7b964f
+--   - 78246454-8b48-44a7-a5de-ded81baabb24
