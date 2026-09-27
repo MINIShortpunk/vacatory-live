@@ -36,3 +36,19 @@
 
 -- Important canonical rule followed:
 -- No unsupported dates were invented. Chambers with no newly published current date/current vacancy were not given inferred Gateway dates unless their existing public record already used the 2027 Gateway window or the chamber's official source supported that cycle.
+
+-- Second-pass gap check, same date:
+-- The stricter main-pupillage check found two false negatives from the cleanup and one naming issue:
+--   - Atkin Chambers restored as a public standing pupillage route.
+--     Official page confirms that Atkin advertises through/follows the Pupillage Gateway, but no exact next-cycle dates or intake year were added.
+--   - Fountain Court Chambers restored as a public standing pupillage route.
+--     Official page confirms the Gateway application route, but its visible date text is historic/stale, so no exact new window was added.
+--   - Matrix Chambers was not missing: it is already represented as "Matrix Chambers Traineeship — October 2028 Start", which is Matrix's pupillage/work-based learning route.
+--
+-- Confirmed non-adds:
+--   - Byrom Street: official mini-pupillage page says Byrom Street does not currently offer pupillages.
+--   - Civitas, Doughty Street and Garden Court North: main pupillage pages are closed/no-current for the next public opportunity, so stale dates remain suppressed.
+--
+-- Additional research_change_log entries:
+--   - 0b1226ff-687f-4a3f-9a77-30723d645f01
+--   - e2ef497f-173d-452d-ba66-1d71216ac882
