@@ -1,0 +1,38 @@
+-- Vacatory chambers pupillage scan audit
+-- Date: 27 September 2026
+-- Scope: all 50 canonical barristers' chambers in Supabase project vac-attack (qusyglgevgyjaoasmjhz)
+-- Purpose: public data refresh for current/upcoming pupillage opportunities only.
+
+-- Verified source baseline:
+-- Pupillage Gateway 2026/27 applicant timetable:
+--   Applicant account setup: 7 September 2026
+--   Vacancies browseable: 23 November 2026
+--   Applications open: 4 January 2027 at 11:00
+--   Applications close: 28 January 2027 at 23:59
+--   Offers made: 7 May 2027 at 09:30
+--   Initial offer acceptance deadline: 14 May 2027 at 09:30
+-- Source: https://www.pupillagegateway.com/for-applicants.html
+
+-- Canonical changes made directly in Supabase:
+-- 1. Standardised four existing 2027 Gateway-based pupillage cycles with the verified opening and closing times:
+--    - 12 Kings Bench Walk Pupillage — Next Cycle
+--    - 6KBW College Hill Pupillage — Next Cycle
+--    - Blackstone Chambers Pupillage — September 2028 Intake
+--    - Blackstone Chambers Assessed Mini-Pupillage — September 2028 Selection Route
+--
+-- 2. Deactivated 32 stale/no-current-vacancy/undated placeholder cycles from public output.
+--    This included no-current-vacancy third-six/probationary-tenancy rows and old undated event/mini-pupillage placeholders.
+--
+-- 3. Restored three dated future pupillage-related events after the safety check so they remain visible in Events:
+--    - 6KBW College Hill Pupillage Open Evening 2026
+--    - Essex Court Chambers Pupillage Open Day 2026
+--    - One Essex Court Women at the Commercial Bar — Pupillage Interview Workshop
+--
+-- 4. Marked all 50 barristers' chambers as research_checked_on = 2026-09-27 and next_review_on = 2026-11-23.
+--
+-- 5. Added research_change_log entries:
+--    - 5a86c833-0081-4020-9a52-2847905749b8
+--    - 5061bfb8-d1a8-40ea-9e2f-d4e8efdc14de
+
+-- Important canonical rule followed:
+-- No unsupported dates were invented. Chambers with no newly published current date/current vacancy were not given inferred Gateway dates unless their existing public record already used the 2027 Gateway window or the chamber's official source supported that cycle.
