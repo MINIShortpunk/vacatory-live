@@ -24,6 +24,17 @@
 --   Aberdeen 25 Sep 2026 is now past and was suppressed.
 -- - Future City Lawyers partner insight days: added Hogan Lovells Cadwalader 2 Nov 2026 and
 --   Simmons & Simmons 4 Nov 2026, both closing 18 Oct 2026 with travel-expense support noted.
+-- - Broader-provider follow-up: added/updated Aspiring Solicitors events:
+--   AS Social Mobility with Mayer Brown, AS Culture with Pinsent Masons, Race for Change with BCLP,
+--   and AS Culture with Dechert.
+-- - Broader-provider follow-up: confirmed Bar Council Pupillage Fair 2026 already represented.
+-- - Broader firm/provider follow-up: added Bird & Bird Trainee Solicitor Open Day and Solicitor Apprentice Open Day.
+-- - Broader firm/provider follow-up: added Mishcon de Reya Black Heritage Graduate Breakfast,
+--   Undergraduate Open Day, Undergraduate Open Day (Virtual), Disability Open Day and Disability Open Day (Virtual).
+-- - Duplicate cleanup: merged duplicate AS Culture with Dechert event cycle.
+-- - Placeholder cleanup: suppressed old undated Mishcon de Reya open-day placeholders replaced by dated/current records.
+-- - Checked Law Society / judiciary / justice-search candidates; no additional current, clearly free,
+--   student-facing dated item was added from those searches.
 
 -- Checked and already represented:
 -- - Hogan Lovells Cadwalader future events.
