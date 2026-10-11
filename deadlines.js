@@ -16,7 +16,7 @@
   "use strict";
 
   const SHARED_MODULE_SRC =
-    "opportunity-data.js?v=canonical-20260817-deadlines";
+    "opportunity-data.js?v=canonical-20261011-deadlines-fix";
 
   const state = {
     deadlines: [],
@@ -46,37 +46,13 @@
         throw new Error("The Supabase client is unavailable.");
       }
 
-      const [exactDeadlines, ongoingOpportunities] = await Promise.all([
-        data.loadDeadlineRecords({
-          client,
-          includePassed: false
-        }),
-        data.loadOngoingOnlineOpportunities({
-          client,
-          includeSearchIndex: true
-        })
-      ]);
-
-      const ongoingRecords = data
-        .buildApplicationTimingRecords(ongoingOpportunities)
-        .filter(record =>
-          record.publicApplicationDateState === "always_available"
-        )
-        .map(record => ({
-          ...record,
-          recordKind: "ongoing"
-        }));
-
-      state.deadlines = [
-        ...exactDeadlines.map(record => ({
-          ...record,
-          recordKind: "deadline"
-        })),
-        ...ongoingRecords
-      ];
+      state.deadlines = await data.loadDeadlineRecords({
+        client,
+        includePassed: false
+      });
 
       state.deadlinesByKey = new Map(
-        exactDeadlines.map(record => [
+        state.deadlines.map(record => [
           record.deadlineRecordKey,
           record
         ])
