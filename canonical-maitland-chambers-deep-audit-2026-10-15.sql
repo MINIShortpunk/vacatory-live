@@ -85,3 +85,28 @@ from public.career_opportunities o where o.organisation_id='094906c5-51f6-4e01-b
 and not exists (select 1 from public.career_opportunity_cycles c where c.opportunity_id=o.id);
 
 commit;
+
+begin;
+
+update public.legal_organisations
+set careers_url='https://www.maitlandchambers.com/pupillage-recruitment/pupillage',updated_at=now()
+where id='094906c5-51f6-4e01-b001-c7d8f938f41b';
+
+update public.career_opportunities
+set official_url='https://www.maitlandchambers.com/pupillage-recruitment/pupillage',updated_at=now()
+where id='faaf5474-7c4c-47ad-98f9-b1770ab924c2';
+update public.career_opportunity_cycles
+set official_url='https://www.maitlandchambers.com/pupillage-recruitment/pupillage',updated_at=now()
+where id='42a46fae-51ed-4e4a-806c-e8aa72efc819';
+
+delete from public.career_opportunity_routes
+where opportunity_id=(select id from public.career_opportunities where organisation_id='094906c5-51f6-4e01-b001-c7d8f938f41b' and slug='maitland-mini-pupillage-october-november-2027')
+  and route_kind='unresolved';
+
+update public.career_opportunity_routes
+set route_kind='flexible_scope',scope_key='partner-managed',route_status='confirmed',
+    route_note='COMBAR manages mentor allocation across participating member sets.',display_order=100,updated_at=now()
+where opportunity_id=(select id from public.career_opportunities where organisation_id='094906c5-51f6-4e01-b001-c7d8f938f41b' and slug='maitland-combar-mentoring-2026-27')
+  and route_kind='unresolved';
+
+commit;
