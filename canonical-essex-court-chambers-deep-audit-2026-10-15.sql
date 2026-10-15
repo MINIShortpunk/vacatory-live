@@ -6,7 +6,7 @@ where id='f695eeed-4b22-4a4b-9b1e-9f19cab07d17';
 
 update public.chambers set
  pupillage_overview='Essex Court offers up to six funded, twelve-month, tenancy-seeking pupillages each year. Applications are made through the Pupillage Gateway and candidates must also email their examination transcripts to the Pupillage Committee. The 2027 application window runs from 4 to 28 January 2027.',
- mini_pupillage_overview='Essex Court no longer accepts direct applications for ordinary mini-pupillages. It provides placements through the Bridging the Bar Academy and offers mini-pupillages to the four finalists of the ESU–Essex Court Chambers National Mooting Competition.',
+ mini_pupillage_overview='Essex Court no longer accepts direct applications for ordinary mini-pupillages. It provides placements through the Bridging the Bar Academy and Inner Temple PASS, offers mini-pupillages to the four finalists of the ESU–Essex Court Chambers National Mooting Competition, and participates in the COMBAR mentoring scheme for underrepresented aspiring barristers.',
  research_status='verified',research_checked_on=date '2026-10-15',next_review_on=date '2026-11-27',updated_at=now()
 where organisation_id='f695eeed-4b22-4a4b-9b1e-9f19cab07d17';
 
@@ -41,6 +41,15 @@ update public.career_opportunity_cycles set
  programme_starts_on=date '2027-08-01',programme_ends_on=date '2028-06-30',date_precision='month',source_status='open',source_status_note=null,
  application_dates_text='Applications for the 2027/28 Academy close at 17:00 on 5 November 2026.',
  programme_dates_text='The Academy programme runs from August 2027 to June 2028.',
+ study_stage_text='Aspiring barristers who meet the Academy eligibility rules.',
+ academic_criteria='The Bridging the Bar Academy eligibility and selection criteria apply.',
+ eligibility_text='Aspiring barristers from underrepresented backgrounds who meet the Bridging the Bar Academy criteria.',
+ application_process_text='Apply through the Bridging the Bar Academy by 17:00 on 5 November 2026. The application includes three written questions, one recorded presentation and two timed video questions.',
+ assessments_text='Three written questions, one recorded presentation and two timed video questions; the Academy manages partner matching after selection.',
+ progression_route_text='The Academy provides skills development and access opportunities, including partner mini-pupillages.',
+ expenses_text=null,right_to_work_text=null,
+ disability_support_text='Applicants may request reasonable adjustments through Bridging the Bar. Essex Court also considers reasonable-adjustment requests.',
+ additional_details_text='Essex Court aims to provide three three-day mini-pupillages each year through Bridging the Bar.',
  official_url='https://bridgingthebar.org/academy-applications/',application_url='https://bridgingthebar.org/academy-applications/',research_checked_on=date '2026-10-15',updated_at=now()
 where opportunity_id='c01e3b40-bffc-4808-b4cb-3e15cabde4bf';
 
@@ -56,6 +65,18 @@ update public.career_opportunity_cycles set
  programme_starts_on=date '2026-11-26',programme_ends_on=date '2026-11-26',programme_dates_text='26 November 2026, approximately 18:30–20:30, in person.',
  date_precision='exact',source_status='open',source_status_note=null,research_checked_on=date '2026-10-15',updated_at=now()
 where opportunity_id='5eca5c83-1b93-4cf9-bce7-c6439874d7a1';
+
+-- The COMBAR application is central and applicants cannot select Essex Court,
+-- so keep one provider-level record rather than creating a duplicate chambers deadline.
+update public.career_opportunity_cycles set
+ closes_on=date '2026-10-23',closes_at=time '23:59',closes_timezone='Europe/London',
+ application_dates_text='Email the completed PDF application form to MentoringURG@combar.com by 23:59 on 23 October 2026.',
+ source_status='open',source_status_note=null,research_checked_on=date '2026-10-15',updated_at=now()
+where id='3e84d130-57a5-48bf-9c64-184502cd31a8';
+update public.career_opportunities set
+ public_summary='One-to-one mentoring for aspiring barristers from groups underrepresented at the Commercial Bar; applications close on 23 October 2026.',
+ research_checked_on=date '2026-10-15',next_review_on=date '2026-10-24',updated_at=now()
+where id='50520794-dfa1-432a-ac2c-e5331e687fea';
 
 -- Permanently remove two duplicate open-evening records and the non-current third-six vacancy record.
 create temporary table deleted_essex_court_opportunities(id uuid primary key) on commit drop;
