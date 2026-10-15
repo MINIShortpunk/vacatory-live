@@ -662,7 +662,7 @@ function renderOverview() {
             .filter(Boolean)
             .join(" · ")
         : "No application window is open today.",
-      currentlyOpen.length ? "confirmed" : "unpublished"
+      "confirmed"
     )
   );
 
@@ -1581,6 +1581,7 @@ function renderOpportunityFilters() {
   container.innerHTML = `
     <div
       class="chamber-opportunity-filter-panel"
+      role="group"
       aria-label="Filter opportunities"
     >
       <div class="chamber-opportunity-filter-grid">
