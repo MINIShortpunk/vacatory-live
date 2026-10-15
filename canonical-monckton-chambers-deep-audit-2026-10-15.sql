@@ -39,6 +39,13 @@ select o.id,'country_only',47,'United Kingdom / participating chambers','confirm
 
 commit;
 
+begin;
+update public.career_opportunity_routes set route_kind='physical_city',country_id=47,city_id=139,scope_key=null,route_note='The Large Pension Room, Gray’s Inn, London',route_status='confirmed',display_order=10,updated_at=now()
+where opportunity_id=(select id from public.career_opportunities where slug='monckton-pupillage-evening-2026') and active;
+update public.career_opportunity_routes set route_kind='country_only',country_id=47,city_id=null,scope_key=null,route_note='United Kingdom / participating chambers',route_status='confirmed',display_order=10,updated_at=now()
+where opportunity_id=(select id from public.career_opportunities where slug='monckton-combar-mentoring-2026-27') and active;
+commit;
+
 -- Second-pass applicant-facing language cleanup.
 begin;
 update public.legal_organisations set
