@@ -175,7 +175,7 @@ with inserted as (
 insert into public.career_opportunity_cycles
   (opportunity_id, cycle_key, cycle_label, programme_year, application_model, programme_starts_on, programme_ends_on, programme_dates_text, date_precision, source_status, audience_text, eligibility_text, programme_structure_text, official_url, application_url, active, research_checked_on)
 select o.id, 'bar-council-pupillage-fair-2026-5-stone-buildings:2026', 'Pupillage Fair 2026', 2026, 'no_application', date '2026-10-17', date '2026-10-17',
-       'Saturday 17 October 2026 at Convene, 133 Houndsditch, London.', 'exact', 'upcoming',
+       '17 October 2026, 10:00–15:00, at Convene, 133 Houndsditch, Liverpool Street, London EC3A 7DB.', 'exact', 'upcoming',
        'University students, graduates and other aspiring barristers.',
        'For aspiring barristers interested in learning about pupillage providers and the profession.',
        'In-person exhibition with chambers, professional bodies and legal-education organisations, plus seminars and application support. 5 Stone Buildings is a confirmed exhibitor.',
@@ -186,7 +186,7 @@ from inserted o;
 insert into public.career_opportunity_cycles
   (opportunity_id, cycle_key, cycle_label, programme_year, application_model, programme_starts_on, programme_ends_on, programme_dates_text, date_precision, source_status, audience_text, eligibility_text, programme_structure_text, official_url, application_url, active, research_checked_on)
 select o.id, 'bar-council-pupillage-fair-2026-5-stone-buildings:2026', 'Pupillage Fair 2026', 2026, 'no_application', date '2026-10-17', date '2026-10-17',
-       'Saturday 17 October 2026 at Convene, 133 Houndsditch, London.', 'exact', 'upcoming',
+       '17 October 2026, 10:00–15:00, at Convene, 133 Houndsditch, Liverpool Street, London EC3A 7DB.', 'exact', 'upcoming',
        'University students, graduates and other aspiring barristers.',
        'For aspiring barristers interested in learning about pupillage providers and the profession.',
        'In-person exhibition with chambers, professional bodies and legal-education organisations, plus seminars and application support. 5 Stone Buildings is a confirmed exhibitor.',
