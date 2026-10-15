@@ -38,3 +38,18 @@ insert into public.career_opportunity_routes(opportunity_id,route_kind,country_i
 select o.id,'country_only',47,'United Kingdom / participating chambers','confirmed',10,true from public.career_opportunities o where o.slug='monckton-combar-mentoring-2026-27' and not exists(select 1 from public.career_opportunity_routes r where r.opportunity_id=o.id);
 
 commit;
+
+-- Second-pass applicant-facing language cleanup.
+begin;
+update public.legal_organisations set
+ uk_visa_summary='Applicants who require immigration permission should contact Monckton Chambers directly before applying to confirm the right-to-work and sponsorship arrangements available for the relevant intake.',
+ uk_visa_checked_on=date '2026-10-15',
+ uk_visa_source_url='https://www.monckton.com/pupillage/how-to-apply/',
+ uk_visa_source_title='Monckton Chambers — How to apply for pupillage',
+ updated_at=now()
+where id='732cac02-ccad-47e2-98f3-d8f562d29d7a';
+update public.career_opportunity_cycles set
+ right_to_work_text='Applicants who require immigration permission should confirm right-to-work and sponsorship arrangements directly with Monckton before applying.',
+ research_checked_on=date '2026-10-15',updated_at=now()
+where id='acb0ddcf-a136-4392-88d9-34cfc279fb58';
+commit;
