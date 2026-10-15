@@ -19,6 +19,7 @@ where id='24a15871-6e10-4c2e-8aee-349f0ba1ba19';
 update public.career_opportunity_cycles
 set cycle_key='middle-temple-access-to-the-bar-award-2027',cycle_label='Middle Temple Access to the Bar Award 2027',
     application_year=2027,programme_year=2027,application_model='fixed_deadline',closes_on=date '2027-01-31',
+    programme_starts_on=date '2027-06-28',programme_ends_on=date '2027-07-09',
     date_precision='month',source_status='upcoming',
     application_dates_text='Participating universities may submit up to two nominations by 31 January 2027. A university may set an earlier internal deadline.',
     programme_dates_text='The two funded weeks run from the final week of June through the first week of July 2027.',
@@ -37,9 +38,9 @@ where id='cdac7727-36e7-4e8a-b915-9ed4608989cc';
 
 update public.career_opportunity_cycles
 set cycle_key='10000-black-interns-summer-2027-crown-office',cycle_label='10,000 Black Interns Summer 2027 — Crown Office Participant',
-    application_year=2026,programme_year=2027,intake_year=2027,application_model='fixed_deadline',closes_on=date '2026-11-01',
+    application_year=2026,programme_year=2027,intake_year=2027,application_model='fixed_deadline',opens_on=date '2026-10-05',closes_on=date '2026-11-01',
     programme_starts_on=date '2027-06-01',programme_ends_on=date '2027-09-30',date_precision='month',source_status='open',
-    application_dates_text='Applications for the Summer 2027 programme close on 1 November 2026.',
+    application_dates_text='Applications for the Summer 2027 programme opened on 5 October 2026 and close on 1 November 2026.',
     programme_dates_text='The Law (The Bar) workstream runs during summer 2027 and rotates interns across participating chambers and organisations within one region.',
     source_status_note=null,
     right_to_work_text='Applicants must already have an unrestricted right to work full-time in the United Kingdom when they apply.',
