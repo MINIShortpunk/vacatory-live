@@ -7,7 +7,7 @@ set overview='6KBW College Hill is a London barristers’ chambers specialising 
 where id='f01cefda-57b2-475d-9e0b-67eaa8ef00d7';
 
 update public.chambers
-set pupillage_overview='6KBW College Hill recruits through the Pupillage Gateway. The confirmed 2027 application cycle is advertised from 23 November 2026, opens on 4 January 2027 and closes on 28 January 2027, for pupillage beginning in 2028. The award for the 2026/27 application round is £57,000: a £28,500 first-six grant and £28,500 guaranteed minimum income during second six. Chambers also funds compulsory courses, qualifying travel outside the M25 and a book grant.',
+set pupillage_overview='6KBW College Hill recruits through the Pupillage Gateway. The confirmed 2027 application cycle is advertised from 23 November 2026, opens on 4 January 2027 and closes on 28 January 2027. The award for the 2026/27 application round is £57,000: a £28,500 first-six grant and £28,500 guaranteed minimum income during second six. Chambers also funds compulsory courses, qualifying travel outside the M25 and a book grant.',
     mini_pupillage_overview='Applications for mini-pupillage are welcomed throughout the year. The programme is open to people over 18 who have left school or sixth-form college, with priority for final-year university students, GDL, LPC or Bar-course students and graduates interested in the criminal Bar who do not already hold pupillage or a training contract. Applicants submit a CV, one-page covering letter and availability. Travel and accommodation are not reimbursed.',
     tenancy_overview='6KBW selects pupils in the hope and expectation that they will become tenants. Tenancy decisions are made in early autumn following structured assessment. A published former-pupil account describes six tenancy assessments across the year: three written and three oral, with the final advocacy assessment at the tenancy interview.',
     pupillage_gateway_member=true,pupillage_gateway_url='https://www.pupillagegateway.com/',research_status='verified',research_checked_on=date '2026-10-15',next_review_on=date '2026-11-23',updated_at=now()
@@ -29,15 +29,15 @@ delete from public.career_opportunities where id in ('bda853d3-e61e-4527-9564-42
 
 update public.career_opportunities
 set slug='6kbw-college-hill-pupillage-2027-application-cycle',official_name='6KBW College Hill Pupillage — 2027 Application Cycle',public_name='6KBW College Hill Pupillage — 2027 Application Cycle',
-    public_summary='Apply through the Pupillage Gateway from 4 to 28 January 2027 for a 12-month pupillage beginning in 2028, with a £57,000 award and guaranteed-income package.',
+    public_summary='Apply through the Pupillage Gateway from 4 to 28 January 2027 for a 12-month pupillage with a £57,000 award and guaranteed-income package.',
     official_url='https://6kbw.com/recruitment/pupillage-application-details/',application_url='https://www.pupillagegateway.com/',research_checked_on=date '2026-10-15',next_review_on=date '2027-01-29',updated_at=now()
 where id='1e036f3e-ff63-42d7-a39a-a217bb236037';
 
 update public.career_opportunity_cycles
-set cycle_label='6KBW College Hill Pupillage — 2027 Application Cycle',application_year=2027,programme_year=2028,intake_year=2028,
+set cycle_label='6KBW College Hill Pupillage — 2027 Application Cycle',application_year=2027,programme_year=null,intake_year=null,
     application_model='fixed_deadline',opens_on=date '2027-01-04',opens_at=time '11:00',opens_timezone='Europe/London',closes_on=date '2027-01-28',closes_at=time '23:59',closes_timezone='Europe/London',date_precision='exact',source_status='upcoming',
     application_dates_text='The vacancy is advertised from 23 November 2026. Applications open at 11:00 on 4 January 2027 and close at 23:59 on 28 January 2027.',
-    programme_dates_text='First-round interviews take place in the weeks commencing 8 and 15 March 2027. The second round is on 3 April 2027. Offers are made on 7 May and initial offers must be accepted by 14 May 2027. Pupillage begins in 2028.',
+    programme_dates_text='First-round interviews take place in the weeks commencing 8 and 15 March 2027. The second round is on 3 April 2027. Offers are made on 7 May and initial offers must be accepted by 14 May 2027.',
     funding_text='£57,000 package: £28,500 first-six grant plus £28,500 guaranteed minimum second-six income. Chambers also funds compulsory courses, qualifying travel outside the M25 and a book grant.',
     expenses_text='Chambers pays qualifying travel expenses outside the M25 and funds compulsory courses and a book grant.',
     disability_support_text='Chambers’ equality policy commits it to reasonable adjustments throughout recruitment and pupillage.',
