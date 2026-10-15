@@ -1761,7 +1761,9 @@ function renderOpportunityFilters() {
   const closingDate = getClosingDate(row);
   const deadlineLabel = closingDate
     ? formatDate(closingDate)
-    : "Not published";
+    : String(row.status || "").toLowerCase() === "annual"
+      ? "Annual programme"
+      : "Dates to be announced";
 
   const summary =
     row.card_summary ||
