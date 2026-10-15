@@ -3,6 +3,7 @@ begin;
 update public.chambers
 set pupillage_overview = '3PB aims to recruit four pupils each year through the Pupillage Gateway. Its next intake begins in October 2028, with Gateway applications open from 4 to 28 January 2027. Pupillages may be based at any of 3PB''s seven centres. The latest official funding package is worth at least £77,000: a £60,000 award and guaranteed-earnings package plus benefits valued at about £17,000.',
     mini_pupillage_overview = '3PB normally provides around 45 selective, unassessed mini-pupillages each year in London, Birmingham, Bournemouth, Bristol, Oxford and Winchester. Placements last three or five days and applicants must be at least 18 and have reached the first year of an undergraduate degree. The 2026 allocation is full; 3PB says applications will reopen in the New Year.',
+    tenancy_overview = 'Vacatory excludes third-six, probationary-tenancy, ordinary-tenancy, lateral-barrister, staff and general employment recruitment. The student-facing profile therefore covers 3PB''s standard pupillage, mini-pupillage information, access partnership and careers events.',
     research_checked_on = date '2026-10-15',
     next_review_on = date '2026-11-23',
     updated_at = now()
