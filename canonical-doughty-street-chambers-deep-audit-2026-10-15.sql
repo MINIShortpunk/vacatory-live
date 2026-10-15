@@ -22,8 +22,9 @@ update public.career_opportunity_cycles set
 where opportunity_id='3371af9c-1afc-4082-ac43-aab690681f19';
 
 update public.career_opportunity_cycles set opens_on=date '2026-10-05',application_model='fixed_deadline',source_status='open',source_status_note=null,
+ programme_starts_on=date '2027-05-01',programme_ends_on=date '2027-09-30',date_precision='month',
  application_dates_text='Applications for the Summer 2027 programme opened on 5 October 2026 and close on 1 November 2026.',
- programme_dates_text='Paid internships run for at least six weeks during summer 2027.',
+ programme_dates_text='Paid internships commence between May and September 2027 and run for at least six weeks.',
  application_process_text='Apply through the 10,000 Interns Foundation by 1 November 2026, selecting the relevant workstream and location. The Foundation manages matching and participating hosts make selection decisions.',research_checked_on=date '2026-10-15',updated_at=now()
 where opportunity_id='4b895ea2-8209-4470-9001-dbcc897e40b9';
 update public.career_opportunities set public_name='10,000 Black Interns Summer 2027 — Doughty Street Participant',official_name='10,000 Black Interns Summer 2027 — Doughty Street Participant',
@@ -35,14 +36,19 @@ update public.career_opportunity_cycles set application_model='rolling',source_s
  application_process_text='Register through Urban Synergy’s mentee form. Urban Synergy reviews eligibility and matches successful applicants with trained professional mentors.',research_checked_on=date '2026-10-15',updated_at=now()
 where opportunity_id='f4f0abc4-a05e-47de-b973-98c22086d802';
 
-update public.career_opportunity_cycles set source_status='annual_route',source_status_note=null,
- application_dates_text='The annual PASS application round runs from October to November.',
- programme_dates_text='PASS combines a one-week mini-pupillage with skills development across the academic year.',
- additional_details_text='Doughty Street offers three one-week PASS placements each year.',research_checked_on=date '2026-10-15',updated_at=now()
-where opportunity_id='54098725-d895-4849-900f-cb0093f303a2';
-update public.career_opportunities set public_name='Inner Temple PASS — Doughty Street Placements',official_name='Inner Temple PASS — Doughty Street Placements',
- public_summary='Apply through Inner Temple’s annual October-to-November PASS round for a funded skills programme and one-week mini-pupillage; Doughty Street offers three placements each year.',research_checked_on=date '2026-10-15',updated_at=now()
-where id='54098725-d895-4849-900f-cb0093f303a2';
+-- Permanently remove the PASS listing: the official 2026/27 application window ran from 13 April to 28 June 2026 and is closed.
+delete from public.career_opportunity_compensation_identity_stage where career_opportunity_id='54098725-d895-4849-900f-cb0093f303a2' or compensation_id in (select id from public.career_opportunity_compensation where opportunity_id='54098725-d895-4849-900f-cb0093f303a2');
+delete from public.career_opportunity_cycle_identity_stage where career_opportunity_id='54098725-d895-4849-900f-cb0093f303a2';
+delete from public.career_opportunity_cycle_routes where opportunity_id='54098725-d895-4849-900f-cb0093f303a2';
+delete from public.career_opportunity_compensation where opportunity_id='54098725-d895-4849-900f-cb0093f303a2';
+delete from public.career_opportunity_locations where opportunity_id='54098725-d895-4849-900f-cb0093f303a2';
+delete from public.career_opportunity_routes where opportunity_id='54098725-d895-4849-900f-cb0093f303a2';
+delete from public.career_opportunity_scope_assignments where opportunity_id='54098725-d895-4849-900f-cb0093f303a2';
+delete from public.career_opportunity_location_candidate_stage where career_opportunity_id='54098725-d895-4849-900f-cb0093f303a2';
+delete from public.career_opportunity_location_migration_stage where career_opportunity_id='54098725-d895-4849-900f-cb0093f303a2';
+delete from public.career_opportunity_identity_stage where career_opportunity_id='54098725-d895-4849-900f-cb0093f303a2';
+delete from public.career_opportunity_cycles where opportunity_id='54098725-d895-4849-900f-cb0093f303a2';
+delete from public.career_opportunities where id='54098725-d895-4849-900f-cb0093f303a2';
 
 -- Permanently remove the speculative essay-competition future placeholder; the latest official round ended in 2024.
 delete from public.career_opportunity_compensation_identity_stage where career_opportunity_id='08b3e4bc-5c06-45ae-a285-6def3a22d012' or compensation_id in (select id from public.career_opportunity_compensation where opportunity_id='08b3e4bc-5c06-45ae-a285-6def3a22d012');
