@@ -84,4 +84,10 @@ insert into public.career_opportunity_cycle_routes (cycle_id,route_id,opportunit
 values ('b058f0cc-cf72-42a7-b00d-b5d6eefec069','2d28454d-f24e-4dd5-9e7c-ae83308cbc8f','db0d8630-d6b2-42cf-a58d-914d6a7b990d','single_route_default',now())
 on conflict do nothing;
 
+insert into public.career_opportunity_locations
+    (id,opportunity_id,cycle_id,country_id,city_id,location_role,location_status,location_note,display_order,created_at)
+values
+    ('7a67e1c2-a91b-4296-8cbc-109e2d9eb566','db0d8630-d6b2-42cf-a58d-914d6a7b990d',null,47,139,'programme','confirmed','Crown Office Chambers, London',10,now())
+on conflict (id) do nothing;
+
 commit;
