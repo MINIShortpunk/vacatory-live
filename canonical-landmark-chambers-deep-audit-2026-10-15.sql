@@ -116,4 +116,74 @@ set application_model='rolling',date_precision='exact',source_status='open',
     research_checked_on=date '2026-10-15',updated_at=now()
 where id in ('e18c7751-8286-40be-997f-fac54aba8bb7','59caf124-d31b-4eef-a17b-a464ae8cf6a8');
 
+-- Second-pass public-language and exact-date cleanup.
+update public.career_opportunities
+set official_name=case id
+      when 'feded964-99c1-4b87-98b6-8d862e243e4e' then 'Landmark Chambers General Pupillage — 2027 Application Cycle'
+      else 'Landmark Chambers Property Pupillage — 2027 Application Cycle' end,
+    public_name=case id
+      when 'feded964-99c1-4b87-98b6-8d862e243e4e' then 'Landmark Chambers General Pupillage — 2027 Application Cycle'
+      else 'Landmark Chambers Property Pupillage — 2027 Application Cycle' end,
+    research_checked_on=date '2026-10-15',updated_at=now()
+where id in ('feded964-99c1-4b87-98b6-8d862e243e4e','284820f0-dc5d-4fa3-aec7-839d19fabd7a');
+
+update public.career_opportunity_cycles
+set cycle_label=case id
+      when '668c9ef1-ebe9-4831-af80-3c8fe88aec37' then 'Landmark Chambers General Pupillage — 2027 Application Cycle'
+      else 'Landmark Chambers Property Pupillage — 2027 Application Cycle' end,
+    programme_year=null,intake_year=null,
+    application_dates_text='Applications open at 11:00am on 4 January 2027 and close at 11:59pm on 28 January 2027 under the mandatory 2027 Pupillage Gateway timetable.',
+    academic_criteria=case id
+      when '668c9ef1-ebe9-4831-af80-3c8fe88aec37' then 'Academic ability is assessed alongside motivation, advocacy, analysis, judgment, resilience and teamwork.'
+      else 'Academic ability is assessed as part of Landmark’s published selection criteria.' end,
+    right_to_work_text=null,research_checked_on=date '2026-10-15',updated_at=now()
+where id in ('668c9ef1-ebe9-4831-af80-3c8fe88aec37','09179351-d07f-4d1c-a40e-64c53db19c6c');
+
+update public.career_opportunity_cycles
+set assessments_text='Applications are reviewed in writing. Mini-pupils are not assessed and the placement does not form part of pupillage selection.',
+    academic_criteria='Applications should include completed or predicted academic results.',
+    right_to_work_text=null,research_checked_on=date '2026-10-15',updated_at=now()
+where id in ('7dd67e7b-29fd-4dc7-8ffd-6e9f146c8192','8eddc3a8-d1a6-4ed7-86a2-fdbad11688da','023c4295-690c-455b-b7ce-142ae7f9fcec');
+
+update public.career_opportunity_cycles
+set assessments_text=null,academic_criteria=null,right_to_work_text=null,expenses_text=null,
+    additional_details_text='Registration is by email and places are subject to capacity.',
+    research_checked_on=date '2026-10-15',updated_at=now()
+where id in ('e18c7751-8286-40be-997f-fac54aba8bb7','59caf124-d31b-4eef-a17b-a464ae8cf6a8');
+
+update public.career_opportunity_cycles
+set assessments_text='Three-round university moot competition using written and oral advocacy on a public-law problem. Specialist planning or environmental-law knowledge is not required.',
+    academic_criteria='Open to LLB, LLM, GDL and BPC students.',right_to_work_text=null,
+    expenses_text='Each highest-scoring advocate receives £500 and a Landmark mini-pupillage.',
+    research_checked_on=date '2026-10-15',updated_at=now()
+where id='95159b2c-db50-427e-8fca-765423c0b440';
+
+update public.career_opportunity_cycles
+set assessments_text='Anonymous 2,000–2,500-word essay judged against the published human-rights question, plagiarism policy and style rules.',
+    right_to_work_text=null,research_checked_on=date '2026-10-15',updated_at=now()
+where id='aa711036-0886-450d-aa56-de02b79e69ab';
+
+update public.career_opportunity_cycles c
+set cycle_label=o.official_name,research_checked_on=date '2026-10-15',updated_at=now()
+from public.career_opportunities o
+where c.opportunity_id=o.id
+  and o.organisation_id='5b186bea-ec89-4c6c-8ac0-9378d044b4be';
+
+update public.career_opportunity_cycles
+set application_process_text='Email pupillage@landmarkchambers.co.uk to register interest.',
+    research_checked_on=date '2026-10-15',updated_at=now()
+where id='e18c7751-8286-40be-997f-fac54aba8bb7';
+
+delete from public.career_opportunity_compensation_identity_stage
+where compensation_id in ('c4d8f6d7-3e19-46b4-afa6-f36a048a8847','0b757091-e775-4057-b714-f13856d9ddfc')
+   or career_opportunity_id in ('c67f25d7-e783-43b1-a92c-0d7bbe10cc70','64f91b03-daac-48fc-b4c7-015b8b8e4a3d');
+
+delete from public.career_opportunity_compensation
+where id in ('c4d8f6d7-3e19-46b4-afa6-f36a048a8847','0b757091-e775-4057-b714-f13856d9ddfc');
+
+update public.career_opportunity_compensation
+set amount_text='Paid internship at no less than the applicable real Living Wage.',
+    details='Paid internship at no less than the applicable real Living Wage.',updated_at=now()
+where id='dff37e1c-3f96-4c4c-82a6-3dec58d15577';
+
 commit;
