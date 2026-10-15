@@ -30,4 +30,29 @@ where compensation_id in ('4f005991-96b0-4ce9-81f4-71a6a1dbf266','fe02767d-6993-
 delete from public.career_opportunity_compensation
 where id in ('4f005991-96b0-4ce9-81f4-71a6a1dbf266','fe02767d-6993-486c-879e-3cf2cc83652d');
 
+update public.career_opportunities
+set official_name='Littleton Chambers Pupillage — 2027 Application Cycle',
+    public_name='Littleton Chambers Pupillage — 2027 Application Cycle',
+    public_summary='Funded 12-month employment, commercial and sports-law pupillage at Littleton Chambers, with applications submitted through the Pupillage Gateway in January 2027.',
+    research_checked_on=date '2026-10-15',updated_at=now()
+where id='2d156912-685e-49d8-9cfc-94e676d75802';
+update public.career_opportunity_cycles
+set cycle_label='Littleton Chambers Pupillage — 2027 Application Cycle',
+    programme_year=null,intake_year=null,programme_starts_on=null,
+    programme_dates_text='Littleton recruits through the 2027 Pupillage Gateway application cycle.',
+    research_checked_on=date '2026-10-15',updated_at=now()
+where id='4448fa4b-3c8b-4120-a47e-c66eb9e1868e';
+
+insert into public.career_opportunities (organisation_id,opportunity_type_id,slug,official_name,public_name,public_summary,delivery_mode,official_url,application_url,active,published,research_checked_on,next_review_on)
+select '39e0a960-36e3-4207-8fea-2d4e75e07646','b29890c7-5f97-4d55-bbf8-9e7fda5e22b3','littleton-combar-mentoring-2026-27','COMBAR Mentoring Scheme 2026–27 — Littleton Participating Set','COMBAR Mentoring Scheme 2026–27 — Littleton Participating Set','Commercial Bar mentoring scheme for applicants from groups underrepresented at the Bar, with Littleton members participating as mentors.','hybrid','https://www.combar.com/news/combar-mentoring-scheme-for-under-represented-groups-now-open-for-applications-4/','https://www.combar.com/news/combar-mentoring-scheme-for-under-represented-groups-now-open-for-applications-4/',true,true,date '2026-10-15',date '2026-10-17'
+where not exists (select 1 from public.career_opportunities where organisation_id='39e0a960-36e3-4207-8fea-2d4e75e07646' and slug='littleton-combar-mentoring-2026-27');
+insert into public.career_opportunity_cycles (opportunity_id,cycle_key,cycle_label,application_year,programme_year,intake_year,application_model,closes_on,closes_timezone,programme_starts_on,programme_ends_on,programme_dates_text,application_dates_text,date_precision,duration_text,source_status,study_stage_text,eligibility_text,expenses_text,official_url,application_url,active,research_checked_on,application_process_text,programme_structure_text,assessments_text,additional_details_text)
+select o.id,'littleton-combar-mentoring-2026-27','COMBAR Mentoring Scheme 2026–27 — Littleton Participating Set',2026,2026,2026,'fixed_deadline',date '2026-10-16','Europe/London',date '2026-11-01',date '2027-06-30','Mentoring takes place during the 2026–27 cycle. A pupillage application and interview workshop and social event is planned for 13 January 2027.','Applications close on 16 October 2026.','exact','2026–27 mentoring cycle','open','Undergraduates and graduates who do not hold a pupillage offer and have realistic prospects of obtaining a commercial-Bar pupillage.','Applicants must be from a group underrepresented at the Bar, demonstrate the potential to pursue a career at the Commercial Bar and show that they would benefit from mentoring.','Participating sets cover reasonable travel expenses for mentees allocated to them.','https://www.combar.com/news/combar-mentoring-scheme-for-under-represented-groups-now-open-for-applications-4/','https://www.combar.com/news/combar-mentoring-scheme-for-under-represented-groups-now-open-for-applications-4/',true,date '2026-10-15','Complete the COMBAR application form, save it as a PDF using the required naming convention and email it to MentoringURG@combar.com.','Successful applicants receive one-to-one mentoring with a practitioner from a participating set, plus access to a pupillage application and interview workshop and social event.','COMBAR assesses applicants by giving equal weight to their need for mentoring and their potential to pursue a career at the Bar.','COMBAR states that the scheme provides about 250 places across 26 participating sets; allocation to Littleton is managed by COMBAR.'
+from public.career_opportunities o where o.organisation_id='39e0a960-36e3-4207-8fea-2d4e75e07646' and o.slug='littleton-combar-mentoring-2026-27'
+and not exists (select 1 from public.career_opportunity_cycles c where c.opportunity_id=o.id);
+update public.career_opportunity_cycles c
+set additional_details_text='COMBAR states that the scheme provides about 250 places across 26 participating sets; allocation to Littleton is managed by COMBAR.',updated_at=now()
+from public.career_opportunities o
+where c.opportunity_id=o.id and o.organisation_id='39e0a960-36e3-4207-8fea-2d4e75e07646' and o.slug='littleton-combar-mentoring-2026-27';
+
 commit;
