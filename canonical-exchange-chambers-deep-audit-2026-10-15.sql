@@ -180,4 +180,43 @@ where o.organisation_id='08dd30c3-11b7-4513-a9a8-3d10db4175f0'
   and o.slug='exchange-chambers-pupillage-forum-2026'
   and not exists (select 1 from public.career_opportunity_cycles c where c.opportunity_id=o.id);
 
+-- Keep public location copy factual and free of internal-status wording.
+update public.career_opportunity_locations
+set location_note = 'Pupillages are based across Leeds, Liverpool and Manchester.'
+where opportunity_id='bb7ff567-e8dc-4067-bc7a-95503a624be2';
+
+update public.career_opportunity_routes
+set route_note = 'Pupillages are based across Leeds, Liverpool and Manchester.',
+    route_status = 'confirmed'
+where opportunity_id='bb7ff567-e8dc-4067-bc7a-95503a624be2';
+
+insert into public.career_opportunity_locations
+  (opportunity_id,city_id,country_id,location_note,display_order,location_role,location_status)
+select o.id,136,47,'Exchange Chambers, One Derby Square, Liverpool L2 9XX',10,'programme','confirmed'
+from public.career_opportunities o
+where o.organisation_id='08dd30c3-11b7-4513-a9a8-3d10db4175f0'
+  and o.slug='exchange-chambers-pupillage-forum-2026'
+  and not exists (
+    select 1 from public.career_opportunity_locations l
+    where l.opportunity_id=o.id and l.city_id=136
+  );
+
+delete from public.career_opportunity_routes r
+using public.career_opportunities o
+where r.opportunity_id=o.id
+  and o.organisation_id='08dd30c3-11b7-4513-a9a8-3d10db4175f0'
+  and o.slug='exchange-chambers-pupillage-forum-2026'
+  and r.route_kind='unresolved';
+
+insert into public.career_opportunity_routes
+  (opportunity_id,route_kind,country_id,city_id,display_order,active,route_status,route_note)
+select o.id,'physical_city',47,136,10,true,'confirmed','Exchange Chambers, One Derby Square, Liverpool L2 9XX'
+from public.career_opportunities o
+where o.organisation_id='08dd30c3-11b7-4513-a9a8-3d10db4175f0'
+  and o.slug='exchange-chambers-pupillage-forum-2026'
+  and not exists (
+    select 1 from public.career_opportunity_routes r
+    where r.opportunity_id=o.id and r.route_kind='physical_city' and r.city_id=136
+  );
+
 commit;
