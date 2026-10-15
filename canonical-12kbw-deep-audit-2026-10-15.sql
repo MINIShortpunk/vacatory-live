@@ -55,9 +55,26 @@ where id = '468e1d08-49e5-4c42-9671-cd389bc755e2';
 
 update public.career_opportunity_cycles
 set funding_text = 'Unpaid. Reasonable travel and accommodation expenses are reimbursed up to £250 per session.',
+    right_to_work_text = null,
+    assessments_text = 'Selection is based on the written online application. The mini-pupillage itself is unassessed.',
     research_checked_on = date '2026-10-15',
     updated_at = now()
 where opportunity_id = '468e1d08-49e5-4c42-9671-cd389bc755e2';
+
+update public.career_opportunity_cycles
+set programme_dates_text = 'Placement: two days during the week beginning 5 July 2027. Successful applicants will be notified by 28 May 2027.',
+    updated_at = now()
+where id = 'a670df95-0c7c-4f36-bad1-14baf459622e';
+
+update public.career_opportunity_cycles
+set programme_dates_text = 'Placement: two days during the week beginning 6 December 2027. Successful applicants will be notified by 15 October 2027.',
+    updated_at = now()
+where id = 'bd270c1e-4135-488e-967e-2939739f6b94';
+
+update public.career_opportunity_cycles
+set programme_dates_text = 'Two-day mini-pupillage during the week beginning 12 April 2027. Successful applicants will be notified by 12 February 2027.',
+    updated_at = now()
+where id = '644f1ea6-4272-4c88-9977-c230c975be20';
 
 delete from public.career_opportunity_compensation_identity_stage
 where career_opportunity_id in (
