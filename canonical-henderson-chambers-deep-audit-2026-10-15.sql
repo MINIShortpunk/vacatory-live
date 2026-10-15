@@ -21,7 +21,7 @@ where id='8e0e92be-bb91-4096-8511-5d457bb1aa4a';
 update public.career_opportunity_cycles
 set cycle_key='henderson-mini-pupillage-may-july-2027',
     cycle_label='Henderson Chambers Mini-Pupillage — May to July 2027',
-    date_precision='exact',duration_text='One to three days',source_status='open',
+    closes_timezone='Europe/London',date_precision='exact',duration_text='One to three days',source_status='open',
     application_dates_text='Applications close at midday on 19 March 2027.',
     official_url='https://www.hendersonpupillage.co.uk/mini-pupillage/how-to-apply',
     application_url='https://www.hendersonpupillage.co.uk/mini-pupillage/application-form',
@@ -37,7 +37,7 @@ where id='a490689d-88a5-41c2-8c3e-fe11609bc90e';
 update public.career_opportunity_cycles
 set cycle_key='henderson-mini-pupillage-september-december-2027',
     cycle_label='Henderson Chambers Mini-Pupillage — September to December 2027',
-    date_precision='exact',duration_text='One to three days',source_status='open',
+    closes_timezone='Europe/London',date_precision='exact',duration_text='One to three days',source_status='open',
     application_dates_text='Applications close at midday on 16 July 2027.',
     expenses_text='Travel costs incurred while shadowing members outside chambers are paid. Henderson offers up to 15 annual £200 bursaries for eligible candidates outside London.',
     official_url='https://www.hendersonpupillage.co.uk/mini-pupillage/how-to-apply',
@@ -50,7 +50,7 @@ set research_checked_on=date '2026-10-15',next_review_on=date '2026-11-21',updat
 where id='c0d084cf-1604-4eec-9191-7d53aaec275c';
 
 update public.career_opportunity_cycles
-set date_precision='exact',duration_text='One to three days',source_status='open',
+set closes_timezone='Europe/London',date_precision='exact',duration_text='One to three days',source_status='open',
     application_dates_text='Applications close at midday on 20 November 2026.',
     official_url='https://www.hendersonpupillage.co.uk/mini-pupillage/how-to-apply',
     application_url='https://www.hendersonpupillage.co.uk/mini-pupillage/application-form',
