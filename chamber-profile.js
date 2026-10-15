@@ -146,7 +146,9 @@ async function loadOpportunityRows(organisationId) {
   });
 
   return deduplicateObjects(
-    opportunities.map(chamberCanonicalOpportunityView),
+    opportunities
+      .filter(opportunity => !opportunity.isEvent)
+      .map(chamberCanonicalOpportunityView),
     row => String(row.id || row.slug)
   ).sort((a, b) =>
     Number(a.display_order || 0) - Number(b.display_order || 0)
