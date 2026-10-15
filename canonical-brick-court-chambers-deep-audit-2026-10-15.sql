@@ -25,8 +25,8 @@ where id='38472636-9627-4b18-b528-9f9cccd70bad';
 update public.career_opportunity_cycles
 set cycle_key='brick-court-chambers-pupillage-2028',cycle_label='Brick Court Chambers Pupillage — 2028 Commencement',
     application_year=2027,programme_year=2028,intake_year=2028,application_model='fixed_deadline',
-    opens_on=date '2027-01-04',closes_on=date '2027-01-28',programme_starts_on=date '2028-09-01',date_precision='month',duration_text='12 months',places_text='Up to five pupillages',source_status='upcoming',
-    application_dates_text='Applications open on 4 January 2027 and close on 28 January 2027 through the Pupillage Gateway.',
+    opens_on=date '2027-01-04',opens_at=time '11:00',opens_timezone='Europe/London',closes_on=date '2027-01-28',closes_at=time '23:59',closes_timezone='Europe/London',programme_starts_on=null,programme_ends_on=null,date_precision='year',duration_text='12 months',places_text='Up to five pupillages',source_status='upcoming',
+    application_dates_text='Applications open at 11:00 on 4 January 2027 and close at 23:59 on 28 January 2027 through the Pupillage Gateway.',
     programme_dates_text='Twelve-month pupillage commencing in 2028.',
     application_process_text='Apply through the Pupillage Gateway. Each application is first considered for an assessed mini-pupillage. The two-day assessed placement includes supervised work and a standard written exercise. Candidates are then considered for final interview, which includes an advocacy exercise.',
     assessments_text='Anonymous paper review, assessed mini-pupillage, standard written exercise and final interview with an advocacy assessment.',
