@@ -94,6 +94,30 @@ from public.career_opportunities o where o.slug='matrix-student-open-day-diversi
 
 commit;
 
+-- Second-pass verification against Matrix's May 2026 traineeship brochure and
+-- current recruitment/event pages. Keep month-only programme timing as text.
+begin;
+update public.chambers set
+ pupillage_overview='Matrix calls pupillage traineeship. The next recruitment round opens in January 2027 for up to two 12-month traineeships beginning in October 2028. The published award is £65,000: £15,000 in the year before traineeship and £50,000 during the training year. Matrix recruits through its own anonymised process in accordance with the mandatory Pupillage Gateway timetable.',
+ research_status='verified',research_checked_on=date '2026-10-15',next_review_on=date '2026-11-02',updated_at=now()
+where organisation_id='df82df8d-9f97-409c-b401-9c1254a74850';
+
+update public.career_opportunities set
+ public_summary='Matrix’s 12-month pupillage-equivalent traineeship, with a £65,000 award and up to two places offered through a three-stage selection process.',
+ research_checked_on=date '2026-10-15',next_review_on=date '2027-01-29',updated_at=now()
+where id='39d1d903-1579-4d5f-b865-594e968eecf7';
+
+update public.career_opportunity_cycles set
+ places_text='Up to two traineeships',
+ programme_starts_on=null,
+ programme_dates_text='The 12-month traineeship begins in October 2028; Matrix does not publish an exact start day.',
+ right_to_work_text='The Bar Council can provide Certificates of Sponsorship to suitably qualified non-UK nationals who secure traineeship. Matrix may advance the relevant sponsorship cost from the £15,000 pre-traineeship payment.',
+ application_process_text='Apply on Matrix’s own application form. Applications are anonymised before sifting; Matrix follows the mandatory Pupillage Gateway timetable but does not use the Gateway application system.',
+ assessments_text='Three stages: anonymised application sift to approximately 40 candidates; a roughly 20-minute first interview reducing the field to up to 10; then a roughly 45-minute final interview including a legal problem provided 45 minutes beforehand.',
+ research_checked_on=date '2026-10-15',updated_at=now()
+where id='e00457bf-1e04-4b9f-b20f-9f08b4b7e8f9';
+commit;
+
 begin;
 update public.career_opportunity_cycles set academic_criteria=null,updated_at=now() where id='7cb11e11-db47-4e7b-b3d3-95f62e3d8d1f';
 update public.career_opportunity_cycles set programme_dates_text='Registration remains open; mentoring lasts at least two years from matching.',updated_at=now() where id='45e43f29-6ff8-4e9a-9de5-aef354af0767';
