@@ -1761,7 +1761,8 @@ function renderOpportunityFilters() {
   const closingDate = getClosingDate(row);
   const deadlineLabel = closingDate
     ? formatDate(closingDate)
-    : String(row.status || "").toLowerCase() === "annual"
+    : String(row.status || "").toLowerCase() === "annual" ||
+        /annual/i.test(String(row.scheme_name || ""))
       ? "Annual programme"
       : "Dates to be announced";
 
