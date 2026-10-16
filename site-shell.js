@@ -39,7 +39,7 @@ const VACATORY_SEARCH_ACTIONS = Object.freeze({
   favourites: { href: "firms.html", label: "Search firms", crossPage: true }
 });
 
-const VACATORY_SITE_NOTICE_VISIBLE = true;
+const VACATORY_SITE_NOTICE_VISIBLE = false;
 
 const VACATORY_NOTICE_CONTENT = Object.freeze({
   home: {
