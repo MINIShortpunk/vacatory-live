@@ -166,3 +166,81 @@ where o.organisation_id='f133ff9a-f1b5-497b-b497-c28e1bb44970' and o.slug='jones
 and not exists(select 1 from career_opportunity_locations l where l.opportunity_id=o.id and l.cycle_id=c.id);
 
 commit;
+
+-- Follow-up official-source audit: separate the two named joint 1L/2L programmes
+-- and permanently remove ordinary graduate-employment records from the student feed.
+begin;
+
+delete from career_opportunities
+where organisation_id='f133ff9a-f1b5-497b-b497-c28e1bb44970'
+  and slug in (
+    'jones-day-australia-graduate-programme-rolling',
+    'jones-day-perth-graduate-programme-2027',
+    'jones-day-us-new-lawyers-group-2027'
+  );
+
+with upserted as (
+ insert into career_opportunities
+ (organisation_id,opportunity_type_id,slug,official_name,public_name,english_name,language_code,public_summary,delivery_mode,
+  official_url,application_url,active,published,display_order,research_checked_on,next_review_on,updated_at)
+ values ('f133ff9a-f1b5-497b-b497-c28e1bb44970','68a7f54d-c4da-433d-882f-c9d4a8bfb894',
+ 'jones-day-qualcomm-scholar-2027-2028','2027 1L Qualcomm Scholar and 2028 2L Summer Associate',
+ '2027 1L Qualcomm Scholar and 2028 2L Summer Associate','2027 1L Qualcomm Scholar and 2028 2L Summer Associate','en',
+ 'A joint San Diego summer-associate programme for first-year law students in the Class of 2029, including part of the 2027 summer with Qualcomm and a return to Jones Day for the 2028 2L programme.',
+ 'in_person','https://www.jonesday.com/en/careers/positions/law-students-and-entry-level-lawyers',
+ 'https://jonesdaylegalrecruitselfapply.viglobalcloud.com/',true,true,41,date '2026-11-07',date '2026-12-01',now())
+ on conflict(organisation_id,slug) do update set public_summary=excluded.public_summary,official_url=excluded.official_url,
+ application_url=excluded.application_url,active=true,published=true,research_checked_on=excluded.research_checked_on,
+ next_review_on=excluded.next_review_on,updated_at=now() returning id)
+insert into career_opportunity_cycles
+ (opportunity_id,cycle_key,cycle_label,application_year,programme_year,intake_year,application_model,application_dates_text,
+  programme_dates_text,date_precision,duration_text,source_status,source_status_note,audience_text,study_stage_text,
+  eligibility_text,official_url,application_url,active,research_checked_on,updated_at)
+select id,'2027-1l-2028-2l','2027 1L Qualcomm Scholar and 2028 2L Summer Associate',2026,2027,2028,'rolling',
+ 'Applications are open; no application deadline or closing time is published.',
+ 'Ten-week 2027 1L summer programme in San Diego, including time with Qualcomm, followed by the 2028 2L Summer Associate Programme. Exact dates are not published.',
+ 'season','Ten weeks in 2027, followed by the 2028 2L programme','open','The official current-opportunities page lists this programme as open.',
+ 'First-year law students in the Class of 2029.','First-year US law student.','Applicants must commit to both the 2027 1L and 2028 2L programmes.',
+ 'https://www.jonesday.com/en/careers/positions/law-students-and-entry-level-lawyers','https://jonesdaylegalrecruitselfapply.viglobalcloud.com/',
+ true,date '2026-11-07',now()
+from upserted where not exists(select 1 from career_opportunity_cycles c where c.opportunity_id=upserted.id);
+
+insert into career_opportunity_locations(opportunity_id,cycle_id,country_id,city_id,location_note,display_order,location_role,location_status)
+select o.id,c.id,48,209,'San Diego, California.',10,'programme','confirmed'
+from career_opportunities o join career_opportunity_cycles c on c.opportunity_id=o.id
+where o.organisation_id='f133ff9a-f1b5-497b-b497-c28e1bb44970' and o.slug='jones-day-qualcomm-scholar-2027-2028'
+and not exists(select 1 from career_opportunity_locations l where l.opportunity_id=o.id and l.cycle_id=c.id and l.city_id=209);
+
+with upserted as (
+ insert into career_opportunities
+ (organisation_id,opportunity_type_id,slug,official_name,public_name,english_name,language_code,public_summary,delivery_mode,
+  official_url,application_url,active,published,display_order,research_checked_on,next_review_on,updated_at)
+ values ('f133ff9a-f1b5-497b-b497-c28e1bb44970','68a7f54d-c4da-433d-882f-c9d4a8bfb894',
+ 'jones-day-advantage-solutions-scholar-2027-2028','2027 1L Advantage Solutions Scholar and 2028 2L Summer Associate',
+ '2027 1L Advantage Solutions Scholar and 2028 2L Summer Associate','2027 1L Advantage Solutions Scholar and 2028 2L Summer Associate','en',
+ 'A joint Irvine summer-associate programme for first-year law students in the Class of 2029, including part of the 2027 summer with Advantage Solutions and a return to Jones Day for the 2028 2L programme.',
+ 'in_person','https://www.jonesday.com/en/careers/positions/law-students-and-entry-level-lawyers',
+ 'https://jonesdaylegalrecruitselfapply.viglobalcloud.com/',true,true,42,date '2026-11-07',date '2026-12-01',now())
+ on conflict(organisation_id,slug) do update set public_summary=excluded.public_summary,official_url=excluded.official_url,
+ application_url=excluded.application_url,active=true,published=true,research_checked_on=excluded.research_checked_on,
+ next_review_on=excluded.next_review_on,updated_at=now() returning id)
+insert into career_opportunity_cycles
+ (opportunity_id,cycle_key,cycle_label,application_year,programme_year,intake_year,application_model,application_dates_text,
+  programme_dates_text,date_precision,duration_text,source_status,source_status_note,audience_text,study_stage_text,
+  eligibility_text,official_url,application_url,active,research_checked_on,updated_at)
+select id,'2027-1l-2028-2l','2027 1L Advantage Solutions Scholar and 2028 2L Summer Associate',2026,2027,2028,'rolling',
+ 'Applications are open; no application deadline or closing time is published.',
+ 'Ten-week 2027 1L summer programme in Irvine, including time with Advantage Solutions, followed by the 2028 2L Summer Associate Programme. Exact dates are not published.',
+ 'season','Ten weeks in 2027, followed by the 2028 2L programme','open','The official current-opportunities page lists this programme as open.',
+ 'First-year law students in the Class of 2029.','First-year US law student.','Applicants must commit to both the 2027 1L and 2028 2L programmes.',
+ 'https://www.jonesday.com/en/careers/positions/law-students-and-entry-level-lawyers','https://jonesdaylegalrecruitselfapply.viglobalcloud.com/',
+ true,date '2026-11-07',now()
+from upserted where not exists(select 1 from career_opportunity_cycles c where c.opportunity_id=upserted.id);
+
+insert into career_opportunity_locations(opportunity_id,cycle_id,country_id,city_id,location_note,display_order,location_role,location_status)
+select o.id,c.id,48,187,'Irvine, California.',10,'programme','confirmed'
+from career_opportunities o join career_opportunity_cycles c on c.opportunity_id=o.id
+where o.organisation_id='f133ff9a-f1b5-497b-b497-c28e1bb44970' and o.slug='jones-day-advantage-solutions-scholar-2027-2028'
+and not exists(select 1 from career_opportunity_locations l where l.opportunity_id=o.id and l.cycle_id=c.id and l.city_id=187);
+
+commit;
