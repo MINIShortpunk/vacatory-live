@@ -62,10 +62,10 @@ insert into career_opportunity_cycles
    academic_criteria,eligibility_text,programme_structure_text,progression_route_text,right_to_work_text,
    funding_text,official_url,application_url,active,research_checked_on,updated_at)
 select id,'current-london-solicitor-apprenticeship','London Solicitor Apprenticeship','rolling',
-       'The official programme page provides an application link but does not publish opening or closing dates.',
+       'Applications close on 14 January 2027 at 11:59pm. The official application portal does not state a timezone.',
        'One intake starts in August or September each year; the official page does not publish an exact 2027 start date.',
        'month','Six years','HFW normally recruits two solicitor apprentices each year.','open',
-       'The programme, eligibility and salary are confirmed on HFW’s official page; no application dates have been inferred.',
+       'The closing date and time are published by HFW’s linked official AllHires application portal.',
        'Year 13 students and eligible gap-year students who have not commenced the second year of an undergraduate degree.',
        'Year 13 or gap-year school leaver.',
        'Seven GCSEs including English and Maths at grade C/4 or above, plus BBB/120 UCAS points or 32 IB points; applications are considered holistically.',
@@ -81,16 +81,37 @@ from upserted
 where not exists (select 1 from career_opportunity_cycles c where c.opportunity_id=upserted.id);
 
 update career_opportunity_cycles c
-set application_model='rolling',opens_on=null,closes_on=null,opens_at=null,closes_at=null,
-    application_dates_text='The official programme page provides an application link but does not publish opening or closing dates.',
+set application_model='fixed_deadline',opens_on=null,closes_on=date '2027-01-14',opens_at=null,closes_at=time '23:59',closes_timezone=null,
+    application_dates_text='Applications close on 14 January 2027 at 11:59pm. The official application portal does not state a timezone.',
     programme_dates_text='One intake starts in August or September each year; the official page does not publish an exact 2027 start date.',
     date_precision='month',duration_text='Six years',places_text='HFW normally recruits two solicitor apprentices each year.',
     source_status='open',
-    source_status_note='The programme, eligibility and salary are confirmed on HFW’s official page; no application dates have been inferred.',
+    source_status_note='The closing date and time are published by HFW’s linked official AllHires application portal.',
     official_url=o.official_url,application_url=o.application_url,active=true,research_checked_on=date '2026-11-07',updated_at=now()
 from career_opportunities o
 where c.opportunity_id=o.id and o.organisation_id='2ed317d0-79cb-40bb-8d1e-94f42eb0675b'
   and o.slug='london-solicitor-apprenticeship';
+
+-- HFW's linked application portal marks both December open-day application routes as closed.
+-- Retain the canonical event evidence, but suppress them from the current public feed so they are not shown as bookable.
+update career_opportunities
+set canonical_public_suppressed=true,
+    canonical_public_suppression_reason='Official HFW application portal states that the application deadline has passed.',
+    research_checked_on=date '2026-11-07',updated_at=now()
+where organisation_id='2ed317d0-79cb-40bb-8d1e-94f42eb0675b'
+  and slug in ('hfw-trainee-open-day-2026','hfw-solicitor-apprenticeship-open-day-2026');
+
+update career_opportunity_cycles c
+set source_status='closed',
+    source_status_note='HFW’s linked official AllHires application portal states that the application deadline has passed.',
+    application_dates_text=case
+      when o.slug='hfw-trainee-open-day-2026' then 'Applications closed at 11:59pm UK time on 5 November 2026.'
+      else 'Applications are closed. The official application portal does not publish the elapsed deadline date.' end,
+    research_checked_on=date '2026-11-07',updated_at=now()
+from career_opportunities o
+where c.opportunity_id=o.id
+  and o.organisation_id='2ed317d0-79cb-40bb-8d1e-94f42eb0675b'
+  and o.slug in ('hfw-trainee-open-day-2026','hfw-solicitor-apprenticeship-open-day-2026');
 
 insert into career_opportunity_locations
   (opportunity_id,cycle_id,city_id,country_id,location_note,display_order,location_role,location_status)
