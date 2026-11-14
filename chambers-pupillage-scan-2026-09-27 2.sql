@@ -1,0 +1,80 @@
+-- Vacatory chambers pupillage scan audit
+-- Date: 27 September 2026
+-- Scope: all 50 canonical barristers' chambers in Supabase project vac-attack (qusyglgevgyjaoasmjhz)
+-- Purpose: public data refresh for current/upcoming pupillage opportunities only.
+
+-- Verified source baseline:
+-- Pupillage Gateway 2026/27 applicant timetable:
+--   Applicant account setup: 7 September 2026
+--   Vacancies browseable: 23 November 2026
+--   Applications open: 4 January 2027 at 11:00
+--   Applications close: 28 January 2027 at 23:59
+--   Offers made: 7 May 2027 at 09:30
+--   Initial offer acceptance deadline: 14 May 2027 at 09:30
+-- Source: https://www.pupillagegateway.com/for-applicants.html
+
+-- Canonical changes made directly in Supabase:
+-- 1. Standardised four existing 2027 Gateway-based pupillage cycles with the verified opening and closing times:
+--    - 12 Kings Bench Walk Pupillage — Next Cycle
+--    - 6KBW College Hill Pupillage — Next Cycle
+--    - Blackstone Chambers Pupillage — September 2028 Intake
+--    - Blackstone Chambers Assessed Mini-Pupillage — September 2028 Selection Route
+--
+-- 2. Deactivated 32 stale/no-current-vacancy/undated placeholder cycles from public output.
+--    This included no-current-vacancy third-six/probationary-tenancy rows and old undated event/mini-pupillage placeholders.
+--
+-- 3. Restored three dated future pupillage-related events after the safety check so they remain visible in Events:
+--    - 6KBW College Hill Pupillage Open Evening 2026
+--    - Essex Court Chambers Pupillage Open Day 2026
+--    - One Essex Court Women at the Commercial Bar — Pupillage Interview Workshop
+--
+-- 4. Marked all 50 barristers' chambers as research_checked_on = 2026-09-27 and next_review_on = 2026-11-23.
+--
+-- 5. Added research_change_log entries:
+--    - 5a86c833-0081-4020-9a52-2847905749b8
+--    - 5061bfb8-d1a8-40ea-9e2f-d4e8efdc14de
+
+-- Important canonical rule followed:
+-- No unsupported dates were invented. Chambers with no newly published current date/current vacancy were not given inferred Gateway dates unless their existing public record already used the 2027 Gateway window or the chamber's official source supported that cycle.
+
+-- Second-pass gap check, same date:
+-- The stricter main-pupillage check found two false negatives from the cleanup and one naming issue:
+--   - Atkin Chambers restored as a public standing pupillage route.
+--     Official page confirms that Atkin advertises through/follows the Pupillage Gateway, but no exact next-cycle dates or intake year were added.
+--   - Fountain Court Chambers restored as a public standing pupillage route.
+--     Official page confirms the Gateway application route, but its visible date text is historic/stale, so no exact new window was added.
+--   - Matrix Chambers was not missing: it is already represented as "Matrix Chambers Traineeship — October 2028 Start", which is Matrix's pupillage/work-based learning route.
+--
+-- Confirmed non-adds:
+--   - Byrom Street: official mini-pupillage page says Byrom Street does not currently offer pupillages.
+--   - Civitas, Doughty Street and Garden Court North: main pupillage pages are closed/no-current for the next public opportunity, so stale dates remain suppressed.
+--
+-- Additional research_change_log entries:
+--   - 0b1226ff-687f-4a3f-9a77-30723d645f01
+--   - e2ef497f-173d-452d-ba66-1d71216ac882
+
+-- Full 50 chambers website + LinkedIn/social follow-up, same date:
+-- User challenged whether the earlier check included a full LinkedIn and website pass. It did not.
+-- A further full sweep was then completed across the 50 canonical chambers using official chambers pages as the authority
+-- and LinkedIn/social/search results only as discovery or cross-check evidence.
+--
+-- Further canonical changes made directly in Supabase:
+--   - Henderson Chambers: added the missing September-December 2027 mini-pupillage window and added the official midday deadline time
+--     to the January-April, May-July and September-December 2027 mini-pupillage cycles.
+--   - Maitland Chambers: added the official 4:00pm deadline time to the May-July 2027 mini-pupillage cycle.
+--   - One Essex Court: attached current dated cycles to the Women at the Commercial Bar advocacy skills session, moot and pupillage
+--     interview workshop records, including the 5 October 2026 moot team-registration deadline.
+--   - Brick Court Chambers: corrected the Student Open Day source URL to the current official events-and-sponsorship page.
+--   - Landmark Chambers: added the Property Moot Competition 2026-27 and the Richard Drabble KC Essay Prize in Human Rights Law 2026.
+--
+-- Confirmed non-adds from the LinkedIn/social follow-up:
+--   - 39 Essex Chambers mini-pupillage was verified against the official page, but its application deadline had already passed on
+--     9 September 2026, so it was not added as a current open opportunity.
+--   - Pump Court Tax Chambers competition material was historic/concluded, so no current public record was added.
+--   - LinkedIn posts that were personal acceptance announcements, stale recruitment posts, duplicated existing records or unsupported
+--     by an official current page were not used to create new Vacatory records.
+--
+-- Follow-up research_change_log entries:
+--   - bdddbdf8-24ed-4d3a-b16c-8927d74156bc
+--   - cc34ac90-790a-407b-b17f-f652ce7b964f
+--   - 78246454-8b48-44a7-a5de-ded81baabb24

@@ -1,0 +1,32 @@
+-- Vacatory canonical firm opportunity actions from the rank 50-to-1 firm-only scan
+-- Applied directly to Supabase project vac-attack (qusyglgevgyjaoasmjhz) on 2026-09-27.
+-- This file is a backup/audit note for GitHub Desktop; it records the live canonical data actions.
+
+-- Official-source checked and actioned:
+-- 1. Browne Jacobson Summer Vacation Scheme 2027
+--    - Kept opening day unpublished because the official page only says Autumn, usually November/December.
+--    - Added official close date: 1 February 2027.
+--
+-- 2. DLA Piper UK Summer Internship 2027
+--    - Corrected Birmingham, Edinburgh, Yorkshire (Leeds) and North West (Manchester) close date to
+--      20 November 2026 at 17:00 GMT.
+--    - Left London as 23 October 2026 at 17:00 GMT.
+--
+-- 3. DLA Piper Dubai Summer Internship 2027
+--    - Added official programme dates: 24 May to 18 June 2027.
+--    - Retained applications: 21 September to 20 November 2026.
+--
+-- 4. Osborne Clarke UK Vacation Scheme 2027
+--    - Removed stale 2026 placement wording.
+--    - Updated programme wording to June/July 2027 with exact placement dates unpublished on the current official apply page.
+--    - Confirmed application window as 1 October 2026 to 15 January 2027 at 23:59.
+--
+-- 5. HFW Hong Kong Training Contract
+--    - Suppressed the stale duplicate 2028 cycle from active canonical data.
+--    - Kept the richer current 2029-intake row active.
+--    - Full hard-delete was blocked by protected dependent salary data, so the stale duplicate is inactive and excluded from active public data.
+--
+-- Checked and already current from existing canonical rows:
+-- - Hogan Lovells Cadwalader winter, spring and summer vacation schemes.
+-- - Norton Rose Fulbright spring vacation scheme, summer vacation scheme and solicitor apprenticeship.
+-- - Irwin Mitchell solicitor apprenticeship dates.

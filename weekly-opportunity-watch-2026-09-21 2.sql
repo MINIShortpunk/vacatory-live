@@ -1,0 +1,98 @@
+-- Vacatory Weekly Opportunity Watch backup
+-- Applied to Supabase project vac-attack (qusyglgevgyjaoasmjhz)
+-- Date applied: 2026-09-21
+--
+-- Purpose:
+-- - Refresh confirmed current opportunity/deadline data from official provider sources.
+-- - Remove stale duplicate cycle rows and event/open-day deadline records.
+-- - Keep events out of the canonical deadline source.
+-- - Delete closed/past DWF Belfast deadline record because the deadline passed on 2026-09-20.
+--
+-- Applied firm opportunity/deadline updates:
+-- 1. Burges Salmon — Bright Sparks 2027
+--    Applications: 2026-09-14 to 2027-02-08.
+--    Programme: Edinburgh 2027-06-07 to 2027-06-11; Bristol 2027-07-05 to 2027-07-09 and 2027-07-12 to 2027-07-16.
+--
+-- 2. Ashurst Perkins Coie — Hong Kong Vacation Scheme
+--    Applications: 2026-09-12 to 2027-01-03.
+--
+-- 3. Ashurst Perkins Coie — ACCESS Ashurst Perkins Coie
+--    Applications open: 2026-10-06.
+--    Close date deliberately not stored because the official page gives an internally impossible close year.
+--    Programme: 2027-07-19 to 2027-07-30.
+--    Interviews: 2027-02-15 to 2027-02-19.
+--
+-- 4. Ashurst Perkins Coie — First Year Insight Day 2027
+--    Applications: 2027-01-04 to 2027-02-26 at 12:00.
+--    Event date: 2027-04-08.
+--
+-- 5. Eversheds Sutherland — Hong Kong Vacation Scheme 2027
+--    Applications: 2026-09-13 to 2026-12-27.
+--    Scheme batches: June and July 2027.
+--
+-- 6. Eversheds Sutherland — UK Solicitor Apprenticeship 2027
+--    Applications close: 2027-01-25 at 23:59.
+--    Offices corrected to London, Birmingham, Manchester and Leeds.
+--
+-- 7. Eversheds Sutherland — Belfast Trainee Programme 2027
+--    Applications close: 2026-10-16 at 23:59.
+--
+-- 8. Eversheds Sutherland — Dublin Trainee Programme 2027
+--    Applications close: 2026-10-11 at 23:59.
+--
+-- 9. Eversheds Sutherland — Belfast Summer Internship 2027
+--    Applications close: 2027-02-27 at 23:59.
+--
+-- 10. Eversheds Sutherland — Dublin Summer Internship 2027
+--     Applications close: 2027-02-27 at 23:59.
+--
+-- 11. Fieldfisher — Pathways to Practice Insight Scheme 2027
+--     Applications: 2026-09-14 to 2026-11-06.
+--     Applications marked not rolling.
+--
+-- 12. Fieldfisher — Vacation Scheme 2027
+--     Applications: 2026-09-14 to 2026-11-06.
+--     Applications marked not rolling.
+--
+-- 13. Freshfields — Trainee Associate Programme
+--     Applications: 2026-10-01 to 2026-11-13.
+--     Intake wording corrected to 2028 or 2029.
+--
+-- 14. Linklaters — Hong Kong Summer Vacation Scheme 2027
+--     Applications: 2026-09-01 to 2026-12-11.
+--     June scheme: 2027-05-31 to 2027-06-25.
+--     July scheme: 2027-06-28 to 2027-07-23.
+--     Pay note: HK$4,500 per week.
+--
+-- 15. Linklaters — Making Links Asia University Programme
+--     Applications close: 2026-10-31.
+--     Offices: Abu Dhabi, Bangkok, Beijing, Dubai, Hong Kong, Jakarta, Riyadh, Seoul, Shanghai, Singapore and Tokyo.
+--     Support: coaching, work experience and financial support.
+--
+-- 16. Withers — Hong Kong Vacation Scheme 2027
+--     Applications: 2026-10-01 to 2026-12-31.
+--     Four four-week schemes in June/July 2027.
+--     Route to 2029 Hong Kong Training Contract interview.
+--
+-- Deleted from firm_programmes / firm_programme_cycles:
+-- - DWF — Belfast Trainee Positions 2027, because the 2026-09-20 deadline is now past.
+-- - Stale duplicate placeholder cycles for the refreshed records above.
+-- - Brodies / Charles Russell Speechlys / Eversheds open-day or insight-event records from the deadline source.
+--
+-- Event records added to career_opportunities:
+-- - Eversheds Sutherland — UK Insight Evenings 2026.
+-- - Brodies — Career Insight Days Autumn 2026.
+-- - Charles Russell Speechlys — Open Days 2026.
+--
+-- Chambers update note:
+-- - Wilberforce mini-pupillage opportunity summaries and cycle rows were updated with the four published session dates,
+--   application deadlines and the 10-place limit.
+--   Session 1: 2026-11-10 to 2026-11-11; applications close 2026-10-20.
+--   Session 2: 2026-12-01 to 2026-12-02; applications close 2026-10-20.
+--   Session 3: 2027-03-23 to 2027-03-24; applications close 2027-03-02.
+--   Session 4: 2027-07-06 to 2027-07-07; applications close 2027-06-15.
+--
+-- Verification completed:
+-- - Each refreshed firm programme now has one current cycle row.
+-- - The targeted Brodies / Charles Russell Speechlys / Eversheds event duplicates remaining in firm_programmes: 0.
+-- - Wilberforce mini-pupillage chamber cycles now contain exact close and session dates.
