@@ -1790,7 +1790,7 @@ function renderHomepageDeadlineLocation(row) {
           ${item.image ? `<img src="${escapeHtml(item.image)}" alt="" width="20" height="12">` : escapeHtml(item.flag)}
         </span>
       `).join("")}
-      ${countries.length === 1 && countries[0] === "United Kingdom" && !(row.cities || []).length ? '<span class="deadline-home-location-copy" aria-hidden="true">Nationwide</span>' : ""}
+      ${countries.length === 1 && countries[0] === "United Kingdom" && !(row.cities || []).length && /^Nationwide\b/i.test(row.publicLocationLabel || "") ? '<span class="deadline-home-location-copy" aria-hidden="true">Nationwide</span>' : ""}
     </span>
   `;
 }
