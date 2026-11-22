@@ -234,7 +234,7 @@
 
     const title = document.createElement("h4");
     title.className = "event-title";
-    title.textContent = event.publicTitle || "Legal career event";
+    title.textContent = eventDisplayTitle(event);
 
     const provider = document.createElement("p");
     provider.className = "event-provider";
@@ -274,7 +274,7 @@
       link.rel = "noopener noreferrer";
       link.setAttribute(
         "aria-label",
-        `${event.publicTitle} official event page (opens in a new tab)`
+        `${eventDisplayTitle(event)} official event page (opens in a new tab)`
       );
       link.innerHTML = `
         <span>Official event page</span>
@@ -458,6 +458,13 @@
     }
 
     return "";
+  }
+
+  function eventDisplayTitle(event) {
+    const title = String(event?.publicTitle || "").trim();
+    if (!title) return "Legal career event";
+    const countryPrefix = /^(?:(?:United Kingdom|Republic of Ireland|Ireland|England|Scotland|Wales|Northern Ireland)(?:\s*\/\s*(?:United Kingdom|Republic of Ireland|Ireland|England|Scotland|Wales|Northern Ireland))*)\s+-\s+/i;
+    return title.replace(countryPrefix, "").trim() || title;
   }
 
   function eventLocationLabel(event) {
