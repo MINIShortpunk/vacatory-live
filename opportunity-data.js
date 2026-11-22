@@ -228,13 +228,12 @@
       descriptor
     )
       .then(rows =>
-        rows
-          .map(row =>
-            normaliseOpportunity(row, {
-              includeSearchIndex
-            })
+        rows.flatMap(row =>
+          expandOpportunityCityPosts(
+            normaliseOpportunity(row, { includeSearchIndex }),
+            { includeSearchIndex }
           )
-          .filter(Boolean)
+        )
       )
       .catch(error => {
         opportunityLoadPromises.delete(cacheKey);
@@ -1002,6 +1001,42 @@
   /* ========================================================================
      CANONICAL PUBLIC OBJECT
      ======================================================================== */
+
+  function expandOpportunityCityPosts(opportunity, options = {}) {
+    if (!opportunity) return [];
+    const confirmed = new Map();
+    for (const location of opportunity.locations || []) {
+      if (location.role === "programme" &&
+          location.status === "confirmed" &&
+          location.city && location.cityId != null) {
+        confirmed.set(location.cityId, location);
+      }
+    }
+    if (confirmed.size < 2) return [opportunity];
+    return [...confirmed.values()].map(location => {
+      const city = location.city;
+      const country = location.country;
+      const post = {
+        ...opportunity,
+        opportunityId: `${opportunity.publicOpportunityId}:city:${location.cityId}`,
+        publicOpportunityId: `${opportunity.publicOpportunityId}:city:${location.cityId}`,
+        publicTitle: `${opportunity.publicTitle} — ${city}`,
+        routeCountry: country,
+        routeCity: city,
+        publicLocationLabel: cityLocationLabel({
+          post_city: city,
+          post_country: country
+        }),
+        countries: [country],
+        cities: [city],
+        locations: [location]
+      };
+      post.searchText = options.includeSearchIndex
+        ? buildSearchText(post)
+        : "";
+      return post;
+    });
+  }
 
   function normaliseOpportunity(row, options = {}) {
     const { includeSearchIndex = true } = options;
