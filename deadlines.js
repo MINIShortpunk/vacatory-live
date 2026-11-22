@@ -1031,7 +1031,7 @@
     const flags = flagItems
       .map(item => `
         <span class="country-flag" aria-hidden="true">
-          ${item.image ? '<img src="/assets/flags/ulster.svg" alt="" width="20" height="12">' : escapeHtml(item.flag)}
+          ${item.image ? '<img src="${escapeHtml(item.image)}" alt="" width="20" height="12">' : escapeHtml(item.flag)}
         </span>
       `)
       .join("");
