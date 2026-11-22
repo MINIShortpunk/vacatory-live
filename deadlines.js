@@ -1000,7 +1000,7 @@
 
   function locationMetaChip(record, data) {
     const countries = recordCountries(record);
-    const place = recordCityOrScope(record) || (record.countries?.length === 1 && record.countries[0] === "United Kingdom" ? "Nationwide" : "");
+    const place = recordCityOrScope(record) || (record.countries?.length === 1 && record.countries[0] === "United Kingdom" && /^Nationwide\b/i.test(record.publicLocationLabel || "") ? "Nationwide" : "");
 
     if (place === "Virtual") {
       return `
