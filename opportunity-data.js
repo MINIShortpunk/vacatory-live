@@ -488,7 +488,14 @@
 
   function cityLocationLabel(row) {
     const city = stringValue(row.post_city);
-    if (!city) return stringValue(row.location_summary);
+    if (!city) {
+      const countries = cleanStringArray(row.countries);
+      if (!countries.length) return stringValue(row.location_summary) || "Location not published";
+      if (countries.length === 1 && countries[0] === "United Kingdom") {
+        return "Nationwide, United Kingdom";
+      }
+      return stringValue(row.location_summary) || countries.join("; ");
+    }
     const country = stringValue(row.post_country);
     const nation = jurisdictionForPlace(country, city);
     return [city, nation || country].filter(Boolean).join(", ");
@@ -1905,10 +1912,16 @@
     }
 
     if (record?.routeCountry) {
-      return record.routeCountry;
+      return record.routeCountry === "United Kingdom"
+        ? "Nationwide, United Kingdom"
+        : record.routeCountry;
     }
 
     if (record?.locationSummary) {
+      if (record.locationSummary === "United Kingdom" &&
+          !cleanStringArray(record?.cities).length) {
+        return "Nationwide, United Kingdom";
+      }
       return record.locationSummary;
     }
 
@@ -1924,10 +1937,12 @@
     }
 
     if (countries.length) {
-      return countries.join(", ");
+      return countries.length === 1 && countries[0] === "United Kingdom"
+        ? "Nationwide, United Kingdom"
+        : countries.join(", ");
     }
 
-    return "";
+    return "Location not published";
   }
 
   function formatCompensation(item) {
@@ -2348,6 +2363,9 @@
       }));
     }
     const items = new Map();
+    if (!countries.length) {
+      return [{ country: "Location not published", code: "", flag: "🌐", image: "" }];
+    }
     for (const country of countries) {
       const places = record.routeCity
         ? [record.routeCity]
