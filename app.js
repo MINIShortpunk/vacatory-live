@@ -1624,7 +1624,8 @@ async function loadUpcomingDeadlines() {
       countries: record.countries,
       cities: record.cities,
       routeCity: record.routeCity,
-      routeCountry: record.routeCountry
+      routeCountry: record.routeCountry,
+      publicLocationLabel: record.publicLocationLabel
     }));
     if (!rows.length) {
       showDeadlineMessage(deadlineList,
@@ -1749,48 +1750,28 @@ function createDeadlinePreviewRow(row) {
 }
 
 function renderHomepageDeadlineLocation(row) {
-  if (["virtual", "online"].includes(row.delivery_mode)) {
-    return `
-      <span
-        class="deadline-home-location"
-        role="img"
-        aria-label="Virtual"
-        title="Virtual"
-      >
-        <span class="deadline-home-flag" aria-hidden="true">💻</span>
-        <span class="deadline-home-location-copy" aria-hidden="true">Virtual</span>
-      </span>
-    `;
-  }
-
-  const countries = [...new Set(
-    (row.countries || [])
-      .map(country => String(country || "").trim())
-      .filter(Boolean)
-  )];
-
-  if (!countries.length) {
-    return `<span class="deadline-home-location" role="img" aria-label="Location not published"><span class="deadline-home-flag" aria-hidden="true">🌐</span><span class="deadline-home-location-copy" aria-hidden="true">Location not published</span></span>`;
+  const mode = String(row.delivery_mode || "").toLowerCase();
+  if (["virtual", "online"].includes(mode)) {
+    return `<span class="deadline-home-location" role="img" aria-label="Virtual"><span class="deadline-home-flag" aria-hidden="true">💻</span><span class="deadline-home-location-copy" aria-hidden="true">Virtual</span></span>`;
   }
 
   const data = window.VacatoryOpportunityData;
-  const flags = data?.countryFlagItems
-    ? data.countryFlagItems(row)
-    : [];
+  const flags = data?.countryFlagItems ? data.countryFlagItems(row) : [];
+  const location = row.routeCity
+    ? [row.routeCity, flags.map(item => item.country).filter(country => !country.startsWith("Location ")).join(", ")].filter(Boolean).join(", ")
+    : /^Nationwide\b/i.test(row.publicLocationLabel || "")
+      ? "Nationwide"
+      : row.publicLocationLabel || flags.map(item => item.country).join(", ") || "Location not published";
+  const accessibleLabel = [flags.map(item => item.country).join(", "), location].filter(Boolean).join(" — ");
 
   return `
-    <span
-      class="deadline-home-location"
-      role="img"
-      aria-label="${escapeHtml(flags.map(item => item.country).join(", "))}"
-      title="${escapeHtml(flags.map(item => item.country).join(", "))}"
-    >
+    <span class="deadline-home-location" role="img" aria-label="${escapeHtml(accessibleLabel)}" title="${escapeHtml(accessibleLabel)}">
       ${flags.map(item => `
         <span class="deadline-home-flag" aria-hidden="true">
           ${item.image ? `<img src="${escapeHtml(item.image)}" alt="" width="20" height="12">` : escapeHtml(item.flag)}
         </span>
       `).join("")}
-      ${countries.length === 1 && countries[0] === "United Kingdom" && !(row.cities || []).length && /^Nationwide\b/i.test(row.publicLocationLabel || "") ? '<span class="deadline-home-location-copy" aria-hidden="true">Nationwide</span>' : ""}
+      <span class="deadline-home-location-copy" aria-hidden="true">${escapeHtml(location)}</span>
     </span>
   `;
 }
