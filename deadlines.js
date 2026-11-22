@@ -1,1 +1,1169 @@
-(()=>{"use strict";const e={deadlines:[],deadlinesByKey:new Map,filters:{search:"",type:"",provider:"",country:""}},n={};function t(n){const t=n.target.closest("[data-deadline-detail-retry]");if(t){const n=t.dataset.deadlineDetailRetry||"",a=e.deadlinesByKey.get(n),d=t.closest("details[data-deadline-record-key]");return void(a&&d&&i(a,d,!0))}const a=n.target.closest("[data-scroll-target]");if(!a)return;const d=document.getElementById(a.dataset.scrollTarget);d?.scrollIntoView({behavior:"smooth",block:"start"})}function a(n){const t=n.target;if(!(t instanceof HTMLDetailsElement&&t.open&&t.matches("details[data-deadline-record-key]")))return;const a=t.dataset.deadlineRecordKey||"",d=e.deadlinesByKey.get(a);!d||d.detailLoaded||d.detailLoading||i(d,t)}async function i(e,n,t=!1){const a=y(),i=n.querySelector("[data-deadline-detail-body]");if(i){e.detailLoading=!0,e.detailError="",i.innerHTML='\n      <p class="deadline-detail-loading" role="status">\n        Loading application details…\n      </p>\n    ';try{const n=await a.loadDeadlineDetails({client:client,sourceOpportunityId:e.sourceOpportunityId,deadlineKey:e.deadlineKey,forceReload:t});e.cycles=n.cycles,e.programmeOccurrences=n.programmeOccurrences.length?n.programmeOccurrences:e.programmeOccurrences,e.compensation=n.compensation,e.primaryCompensation=n.primaryCompensation,e.detailLoaded=!0,e.detailLoading=!1;const d=a.opportunityOfficialUrl(e);i.innerHTML=function(e,n){const t=y(),a=e.cycles||[],i=a[0]||{},d=u(a.map(e=>e.applicationDatesText)),o=u(a.map(e=>e.audienceText)),l=u(a.map(e=>e.studyStageText)),r=u(a.map(e=>e.academicCriteria)),s=u(a.map(e=>e.eligibilityText)),c=u(a.map(e=>e.applicationProcessText)),m=u(a.map(e=>e.assessmentsText)),h=u(a.map(e=>e.progressionRouteText)),f=u(a.map(e=>e.fundingText)),v=u(a.map(e=>e.expensesText)),$=u(a.map(e=>e.travelSupportText)),w=u(a.map(e=>e.accommodationSupportText)),L=u(a.map(e=>e.rightToWorkText)),b=u(a.map(e=>e.disabilitySupportText));return`\n      <div class="deadline-details-grid">\n        <section class="deadline-detail-section">\n          <h6>Application</h6>\n          <dl class="deadline-detail-list">\n            ${p("Opens",i.opensOn?t.formatDate(i.opensOn):"")}\n            ${p("Closes",t.formatDate(e.closesOn))}\n            ${p("Application timing",d.join(" | "))}\n            ${p("Status",t.formatApplicationStatus(e.publicApplicationStatus))}\n          </dl>\n        </section>\n\n        ${function(e){const n=y(),t=e.programmeOccurrences||[];return t.length?`\n      <section class="deadline-detail-section">\n        <h6>\n          ${t.length>1?"Programme options":"Programme"}\n        </h6>\n\n        <ul class="deadline-programme-list">\n          ${t.map(e=>{const t=n.formatDateRange(e.programmeStartsOn,e.programmeEndsOn,e.programmeDatesText)||"Programme dates not published",a=[e.durationText,e.placesText].filter(Boolean);return`\n                <li>\n                  <strong>${g(t)}</strong>\n                  ${a.length?`<span>${g(a.join(" - "))}</span>`:""}\n                </li>\n              `}).join("")}\n        </ul>\n      </section>\n    `:""}(e)}\n\n        ${o.length||l.length||r.length||s.length?`\n              <section class="deadline-detail-section">\n                <h6>Eligibility</h6>\n                <dl class="deadline-detail-list">\n                  ${p("Audience",o.join(" | "))}\n                  ${p("Study stage",l.join(" | "))}\n                  ${p("Academic criteria",r.join(" | "))}\n                  ${p("Eligibility",s.join(" | "))}\n                </dl>\n              </section>\n            `:""}\n\n        ${c.length||m.length||h.length?`\n              <section class="deadline-detail-section">\n                <h6>Application process</h6>\n                <dl class="deadline-detail-list">\n                  ${p("Process",c.join(" | "))}\n                  ${p("Assessments",m.join(" | "))}\n                  ${p("Progression",h.join(" | "))}\n                </dl>\n              </section>\n            `:""}\n\n        ${function(e){const n=y(),t=e.compensation||[];if(!t.length)return"";const a=t.map(e=>{const t=n.formatCompensation(e);return t?p([e.type?n.readableLabel(e.type):"Compensation",e.stage?n.readableLabel(e.stage):""].filter(Boolean).join(" - "),t):""}).filter(Boolean).join("");return a?`\n      <section class="deadline-detail-section">\n        <h6>Pay and funding</h6>\n        <dl class="deadline-detail-list">\n          ${a}\n        </dl>\n      </section>\n    `:""}(e)}\n\n        ${f.length||v.length||$.length||w.length||L.length||b.length?`\n              <section class="deadline-detail-section">\n                <h6>Funding and support</h6>\n                <dl class="deadline-detail-list">\n                  ${p("Funding",f.join(" | "))}\n                  ${p("Expenses",v.join(" | "))}\n                  ${p("Travel",$.join(" | "))}\n                  ${p("Accommodation",w.join(" | "))}\n                  ${p("Right to work / visa",L.join(" | "))}\n                  ${p("Disability support",b.join(" | "))}\n                </dl>\n              </section>\n            `:""}\n      </div>\n\n      ${function(e,n){const t=y().providerProfileUrl(e),a=[];return t&&["law_firm","barristers_chambers"].includes(e.providerType)&&a.push(`\n        <a class="deadline-action-link" href="${g(t)}">\n          View ${g(e.providerName)} profile\n        </a>\n      `),n&&a.push(`\n        <a\n          class="deadline-action-link deadline-action-link-primary"\n          href="${g(n)}"\n          target="_blank"\n          rel="noopener noreferrer"\n          aria-label="Open official page for ${g(e.publicTitle)} in a new tab"\n        >\n          Official opportunity page\n          <span aria-hidden="true">↗</span>\n        </a>\n      `),a.length?`\n      <div class="deadline-actions">\n        ${a.join("")}\n      </div>\n    `:""}(e,n)}\n    `}(e,d)}catch(n){console.error("Unable to load canonical deadline details:",n),e.detailLoading=!1,e.detailError=String(n?.message||n||""),i.innerHTML=`\n        <div class="deadline-detail-error" role="alert">\n          <p>Unable to load the detailed application information right now.</p>\n          <button\n            type="button"\n            class="deadline-detail-retry"\n            data-deadline-detail-retry="${g(e.deadlineRecordKey)}"\n          >\n            Try again\n          </button>\n        </div>\n      `}}}function d(){[n.search,n.type,n.provider,n.country].forEach(e=>{e&&(e.value="")}),l(),n.search?.focus()}function o(e,n,t){if(!e)return;const a=e.value;e.replaceChildren();const i=document.createElement("option");i.value="",i.textContent=n,e.appendChild(i);for(const n of t){const t=document.createElement("option");t.value=n,t.textContent=n,e.appendChild(t)}t.includes(a)&&(e.value=a)}function l(){window.VacatoryOpportunityData&&(e.filters.search=n.search?.value.trim()||"",e.filters.type=n.type?.value||"",e.filters.provider=n.provider?.value||"",e.filters.country=n.country?.value||"",function(e){var t,a,i;if(n.list&&n.count)n.count.textContent=`${t=e.length} ${a=t,1===a?"deadline":"deadlines"}`,n.loading?.classList.add("hidden"),n.error?.classList.add("hidden"),e.length?(n.empty?.classList.add("hidden"),n.list.innerHTML=(i=e,i.length?`\n      <div\n        class="deadline-list-canonical"\n        role="region"\n        aria-label="Exact application deadlines in date order"\n      >\n        ${i.map(s).join("")}\n      </div>\n    `:"")):(n.list.replaceChildren(),n.empty?.classList.remove("hidden"))}(e.deadlines.filter(r)))}function r(n){const t=y();return!(e.filters.search&&!t.matchesSearch(n,e.filters.search)||e.filters.type&&n.opportunityTypeLabel!==e.filters.type||e.filters.provider&&n.providerName!==e.filters.provider||e.filters.country&&!window.VacatoryJurisdictions.matchesOpportunity(n,e.filters.country))}function s(e){const n=y(),t=n.formatShortDeadlineDate(e.closesOn),a=n.providerProfileUrl(e),i=`deadline-${d=e.deadlineRecordKey||e.deadlineKey,String(d||"").replace(/[^a-zA-Z0-9_-]/g,"-")}`;var d;const o=e.programmeOccurrences.length;return`\n      <article class="deadline-card deadline-card-canonical">\n        <div class="deadline-card-date" aria-label="${g(n.formatDate(e.closesOn))}">\n          <span class="deadline-date-day">${g(t.day)}</span>\n          <span class="deadline-date-month">${g(t.month)}</span>\n          <span class="deadline-date-year">${g(t.year)}</span>\n        </div>\n\n        <div class="deadline-card-main">\n          <div class="deadline-card-topline">\n            <span class="deadline-provider-type">\n              ${g(n.providerTypeLabel(e.providerType))}\n            </span>\n          </div>\n\n          <p class="deadline-provider-name">\n            ${a?`<a href="${g(a)}">${g(e.providerName)}</a>`:g(e.providerName)}\n          </p>\n\n          <h5 class="deadline-opportunity-title">\n            ${g(e.publicTitle)}\n          </h5>\n\n          <div class="deadline-meta-row">\n            ${c(e.opportunityTypeLabel)}\n            ${function(e,n){const t=function(e){return e?.routeCountry?[e.routeCountry]:m(e?.countries||[])}(e),a=function(e){return e?.routeCity?e.routeCity:e?.routeScope?e.routeScope:e?.cities?.length?m(e.cities).join(", "):"Virtual"===e?.locationSummary||["virtual","online"].includes(e?.deliveryMode)?"Virtual":""}(e);if("Virtual"===a)return'\n        <span\n          class="deadline-meta-chip deadline-country-chip"\n          role="img"\n          aria-label="Virtual"\n          title="Virtual"\n        >\n          <span class="country-flag" aria-hidden="true">💻</span>\n          <span class="deadline-country-place" aria-hidden="true">Virtual</span>\n        </span>\n      ';if(!t.length)return c(a||n.locationLabel(e));const i=[n.countryFlagItems(e).map(x=>x.country).join(", "),a].filter(Boolean).join(" — "),d=n.countryFlagItems(e).map(e=>`\n        <span class="country-flag" aria-hidden="true">\n          ${g(e.flag)}\n        </span>\n      `).join("");return`\n      <span\n        class="deadline-meta-chip deadline-country-chip"\n        role="img"\n        aria-label="${g(i)}"\n        title="${g(i)}"\n      >\n        <span class="country-flag-group" aria-hidden="true">\n          ${d}\n        </span>\n        ${a?`<span class="deadline-country-place" aria-hidden="true">${g(a)}</span>`:""}\n      </span>\n    `}(e,n)}\n            ${o>1?c(`${o} programme options`):""}\n            ${e.mayCloseEarly?c("May close early"):""}\n          </div>\n\n          <p class="deadline-closing-copy">\n            <strong>Applications close:</strong>\n            ${g(n.formatDate(e.closesOn))}\n            ${function(e){if(!e.closesAt)return"";const n=e.closesTimezone?` ${e.closesTimezone}`:"";return` at ${g(e.closesAt)}${g(n)}`}(e)}\n          </p>\n\n          <details\n            id="${g(i)}"\n            class="deadline-details"\n            data-deadline-record-key="${g(e.deadlineRecordKey)}"\n          >\n            <summary>View details</summary>\n            <div\n              class="deadline-detail-body"\n              data-deadline-detail-body\n              aria-live="polite"\n            >\n              <p class="deadline-detail-prompt">\n                Detailed application information loads when you open this section.\n              </p>\n            </div>\n          </details>\n        </div>\n      </article>\n    `}function c(e){return e?`\n      <span class="deadline-meta-chip">\n        ${g(e)}\n      </span>\n    `:""}function p(e,n){return n?`\n      <div class="deadline-detail-row">\n        <dt>${g(e)}</dt>\n        <dd>${g(n)}</dd>\n      </div>\n    `:""}function u(e){return[...new Set((e||[]).map(e=>String(e||"").trim()).filter(Boolean))]}function m(e){return[...new Set(e.filter(Boolean))].sort((e,n)=>String(e).localeCompare(String(n)))}function y(){return window.VacatoryOpportunityData}function g(e){const n=y();return n?.escapeHtml?n.escapeHtml(e):String(e??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;")}document.addEventListener("DOMContentLoaded",async function(){n.search=document.getElementById("deadlineSearch"),n.type=document.getElementById("deadlineType"),n.provider=document.getElementById("deadlineProvider"),n.country=document.getElementById("deadlineCountry"),n.reset=document.getElementById("deadlineReset"),n.count=document.getElementById("deadlineCount"),n.loading=document.getElementById("deadlinesLoading"),n.error=document.getElementById("deadlinesError"),n.empty=document.getElementById("deadlinesEmpty"),n.list=document.getElementById("deadlinesList"),n.search?.addEventListener("input",function(e,n=120){let t;return(...a)=>{window.clearTimeout(t),t=window.setTimeout(()=>e(...a),n)}}(l,100)),n.type?.addEventListener("change",l),n.provider?.addEventListener("change",l),n.country?.addEventListener("change",l),n.reset?.addEventListener("click",d),n.list?.addEventListener("click",t),n.list?.addEventListener("toggle",a,!0),n.loading?.classList.remove("hidden"),n.error?.classList.add("hidden"),n.empty?.classList.add("hidden"),n.list&&n.list.replaceChildren(),n.count&&(n.count.textContent="Loading application deadlines...");try{const t=await async function(){if(window.VacatoryOpportunityData)return window.VacatoryOpportunityData;if(await(e="opportunity-data.js?v=canonical-country-flags-20261016",n="vacatoryOpportunityDataScript",new Promise((t,a)=>{const i=document.getElementById(n);if(i)return window.VacatoryOpportunityData?void t():(i.addEventListener("load",t,{once:!0}),void i.addEventListener("error",()=>a(new Error(`Unable to load ${e}`)),{once:!0}));const d=document.createElement("script");d.id=n,d.src=e,d.defer=!0,d.addEventListener("load",t,{once:!0}),d.addEventListener("error",()=>a(new Error(`Unable to load ${e}`)),{once:!0}),document.head.appendChild(d)})),!window.VacatoryOpportunityData)throw new Error("The shared Vacatory opportunity data layer did not load.");var e,n;return window.VacatoryOpportunityData}();if("undefined"==typeof client)throw new Error("The Supabase client is unavailable.");e.deadlines=await t.loadDeadlineRecords({client:client,includePassed:!1}),e.deadlinesByKey=new Map(e.deadlines.map(e=>[e.deadlineRecordKey,e])),o(n.type,"All opportunity types",m(e.deadlines.map(e=>e.opportunityTypeLabel))),o(n.provider,"All providers",m(e.deadlines.map(e=>e.providerName))),l()}catch(e){console.error("Unable to load canonical deadlines:",e),n.loading?.classList.add("hidden"),n.empty?.classList.add("hidden"),n.error?.classList.remove("hidden"),n.list&&n.list.replaceChildren(),n.count&&(n.count.textContent="Application deadlines could not be loaded.")}})})();
+/*
+ * Vacatory
+ * deadlines.js
+ *
+ * Canonical Deadlines page controller.
+ *
+ * DATA RULE:
+ * This page consumes window.VacatoryOpportunityData only.
+ * The initial list uses the shared lean canonical occurrence projection.
+ * Heavy application detail is fetched through the same shared data layer only
+ * when a user opens a deadline.
+ * It does not query or merge legacy opportunity tables/views.
+ */
+
+(() => {
+  "use strict";
+
+  const SHARED_MODULE_SRC =
+    "opportunity-data.js?v=canonical-country-flags-20261016";
+
+  const state = {
+    deadlines: [],
+    deadlinesByKey: new Map(),
+    filters: {
+      search: "",
+      type: "",
+      provider: "",
+      country: ""
+    }
+  };
+
+  const elements = {};
+
+  document.addEventListener("DOMContentLoaded", initialiseDeadlinesPage);
+
+  async function initialiseDeadlinesPage() {
+    cacheElements();
+    bindControls();
+    setLoadingState();
+
+    try {
+      const data = await ensureSharedOpportunityModule();
+
+      if (typeof client === "undefined") {
+        throw new Error("The Supabase client is unavailable.");
+      }
+
+      state.deadlines = await data.loadDeadlineRecords({
+        client,
+        includePassed: false
+      });
+
+      state.deadlinesByKey = new Map(
+        state.deadlines.map(record => [
+          record.deadlineRecordKey,
+          record
+        ])
+      );
+
+      populateFilterOptions();
+      applyFiltersAndRender();
+    } catch (error) {
+      console.error("Unable to load canonical deadlines:", error);
+      showErrorState();
+    }
+  }
+
+  /* ======================================================================
+     SHARED MODULE
+     ====================================================================== */
+
+  async function ensureSharedOpportunityModule() {
+    if (window.VacatoryOpportunityData) {
+      return window.VacatoryOpportunityData;
+    }
+
+    await loadScriptOnce(
+      SHARED_MODULE_SRC,
+      "vacatoryOpportunityDataScript"
+    );
+
+    if (!window.VacatoryOpportunityData) {
+      throw new Error(
+        "The shared Vacatory opportunity data layer did not load."
+      );
+    }
+
+    return window.VacatoryOpportunityData;
+  }
+
+  function loadScriptOnce(src, id) {
+    return new Promise((resolve, reject) => {
+      const existing = document.getElementById(id);
+
+      if (existing) {
+        if (window.VacatoryOpportunityData) {
+          resolve();
+          return;
+        }
+
+        existing.addEventListener("load", resolve, { once: true });
+        existing.addEventListener(
+          "error",
+          () => reject(new Error(`Unable to load ${src}`)),
+          { once: true }
+        );
+        return;
+      }
+
+      const script = document.createElement("script");
+      script.id = id;
+      script.src = src;
+      script.defer = true;
+
+      script.addEventListener("load", resolve, { once: true });
+      script.addEventListener(
+        "error",
+        () => reject(new Error(`Unable to load ${src}`)),
+        { once: true }
+      );
+
+      document.head.appendChild(script);
+    });
+  }
+
+  /* ======================================================================
+     CANONICAL FILTER SHELL + CONTROLS
+     ====================================================================== */
+
+  function cacheElements() {
+    elements.search =
+      document.getElementById("deadlineSearch");
+
+    elements.type =
+      document.getElementById("deadlineType");
+
+    elements.provider =
+      document.getElementById("deadlineProvider");
+
+    elements.country =
+      document.getElementById("deadlineCountry");
+
+    elements.reset =
+      document.getElementById("deadlineReset");
+
+    elements.count =
+      document.getElementById("deadlineCount");
+
+    elements.loading =
+      document.getElementById("deadlinesLoading");
+
+    elements.error =
+      document.getElementById("deadlinesError");
+
+    elements.empty =
+      document.getElementById("deadlinesEmpty");
+
+    elements.list =
+      document.getElementById("deadlinesList");
+  }
+
+  function bindControls() {
+    elements.search?.addEventListener(
+      "input",
+      debounce(applyFiltersAndRender, 100)
+    );
+
+    elements.type?.addEventListener(
+      "change",
+      applyFiltersAndRender
+    );
+
+    elements.provider?.addEventListener(
+      "change",
+      applyFiltersAndRender
+    );
+
+    elements.country?.addEventListener(
+      "change",
+      applyFiltersAndRender
+    );
+
+    elements.reset?.addEventListener(
+      "click",
+      resetFilters
+    );
+
+    elements.list?.addEventListener(
+      "click",
+      handleListClick
+    );
+
+    elements.list?.addEventListener(
+      "toggle",
+      handleDeadlineToggle,
+      true
+    );
+  }
+
+  function handleListClick(event) {
+    const retry = event.target.closest("[data-deadline-detail-retry]");
+
+    if (retry) {
+      const key = retry.dataset.deadlineDetailRetry || "";
+      const record = state.deadlinesByKey.get(key);
+      const details = retry.closest("details[data-deadline-record-key]");
+
+      if (record && details) {
+        loadDeadlineRecordDetails(record, details, true);
+      }
+
+      return;
+    }
+
+    const button =
+      event.target.closest("[data-scroll-target]");
+
+    if (!button) {
+      return;
+    }
+
+    const target =
+      document.getElementById(button.dataset.scrollTarget);
+
+    target?.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  }
+
+  function handleDeadlineToggle(event) {
+    const details = event.target;
+
+    if (
+      !(details instanceof HTMLDetailsElement) ||
+      !details.open ||
+      !details.matches("details[data-deadline-record-key]")
+    ) {
+      return;
+    }
+
+    const key = details.dataset.deadlineRecordKey || "";
+    const record = state.deadlinesByKey.get(key);
+
+    if (!record || record.detailLoaded || record.detailLoading) {
+      return;
+    }
+
+    loadDeadlineRecordDetails(record, details);
+  }
+
+  async function loadDeadlineRecordDetails(
+    record,
+    details,
+    forceReload = false
+  ) {
+    const data = getData();
+    const body = details.querySelector("[data-deadline-detail-body]");
+
+    if (!body) {
+      return;
+    }
+
+    record.detailLoading = true;
+    record.detailError = "";
+
+    body.innerHTML = `
+      <p class="deadline-detail-loading" role="status">
+        Loading application details…
+      </p>
+    `;
+
+    try {
+      const detail = await data.loadDeadlineDetails({
+        client,
+        sourceOpportunityId: record.sourceOpportunityId,
+        deadlineKey: record.deadlineKey,
+        forceReload
+      });
+
+      record.cycles = detail.cycles;
+      record.programmeOccurrences =
+        detail.programmeOccurrences.length
+          ? detail.programmeOccurrences
+          : record.programmeOccurrences;
+      record.compensation = detail.compensation;
+      record.primaryCompensation = detail.primaryCompensation;
+      record.detailLoaded = true;
+      record.detailLoading = false;
+
+      const officialUrl = data.opportunityOfficialUrl(record);
+      body.innerHTML = renderExactDeadlineDetails(record, officialUrl);
+    } catch (error) {
+      console.error(
+        "Unable to load canonical deadline details:",
+        error
+      );
+
+      record.detailLoading = false;
+      record.detailError = String(error?.message || error || "");
+
+      body.innerHTML = `
+        <div class="deadline-detail-error" role="alert">
+          <p>Unable to load the detailed application information right now.</p>
+          <button
+            type="button"
+            class="deadline-detail-retry"
+            data-deadline-detail-retry="${escapeHtml(record.deadlineRecordKey)}"
+          >
+            Try again
+          </button>
+        </div>
+      `;
+    }
+  }
+
+  function readFilters() {
+    state.filters.search =
+      elements.search?.value.trim() || "";
+
+    state.filters.type =
+      elements.type?.value || "";
+
+    state.filters.provider =
+      elements.provider?.value || "";
+
+    state.filters.country =
+      elements.country?.value || "";
+  }
+
+  function resetFilters() {
+    [
+      elements.search,
+      elements.type,
+      elements.provider,
+      elements.country
+    ].forEach(element => {
+      if (element) {
+        element.value = "";
+      }
+    });
+
+    applyFiltersAndRender();
+    elements.search?.focus();
+  }
+
+  /* ======================================================================
+     FILTER OPTIONS
+     ====================================================================== */
+
+  function populateFilterOptions() {
+    populateTypeOptions();
+    populateProviderOptions();
+  }
+
+  function populateTypeOptions() {
+    replaceSelectOptions(
+      elements.type,
+      "All opportunity types",
+      uniqueSorted(
+        state.deadlines.map(
+          opportunity => opportunity.opportunityTypeLabel
+        )
+      )
+    );
+  }
+
+  function populateProviderOptions() {
+    replaceSelectOptions(
+      elements.provider,
+      "All providers",
+      uniqueSorted(
+        state.deadlines.map(
+          opportunity => opportunity.providerName
+        )
+      )
+    );
+  }
+
+  function replaceSelectOptions(select, emptyLabel, values) {
+    if (!select) {
+      return;
+    }
+
+    const current = select.value;
+    select.replaceChildren();
+
+    const emptyOption = document.createElement("option");
+    emptyOption.value = "";
+    emptyOption.textContent = emptyLabel;
+    select.appendChild(emptyOption);
+
+    for (const value of values) {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = value;
+      select.appendChild(option);
+    }
+
+    if (values.includes(current)) {
+      select.value = current;
+    }
+  }
+
+  function recordCountries(record) {
+    if (record?.routeCountry) {
+      return [record.routeCountry];
+    }
+
+    return uniqueSorted(record?.countries || []);
+  }
+
+  function recordCityOrScope(record) {
+    if (record?.routeCity) {
+      return record.routeCity;
+    }
+
+    if (record?.routeScope) {
+      return record.routeScope;
+    }
+
+    if (record?.cities?.length) {
+      return uniqueSorted(record.cities).join(", ");
+    }
+
+    if (record?.locationSummary === "Virtual") {
+      return "Virtual";
+    }
+
+    if (["virtual", "online"].includes(record?.deliveryMode)) {
+      return "Virtual";
+    }
+
+    return "";
+  }
+
+  /* ======================================================================
+     FILTERING + RENDER
+     ====================================================================== */
+
+  function applyFiltersAndRender() {
+    if (!window.VacatoryOpportunityData) {
+      return;
+    }
+
+    readFilters();
+
+    const filteredDeadlines =
+      state.deadlines.filter(matchesDeadlineFilters);
+
+    renderResults(filteredDeadlines);
+  }
+
+  function matchesDeadlineFilters(record) {
+    const data = getData();
+
+    if (
+      state.filters.search &&
+      !data.matchesSearch(
+        record,
+        state.filters.search
+      )
+    ) {
+      return false;
+    }
+
+    if (
+      state.filters.type &&
+      record.opportunityTypeLabel !==
+        state.filters.type
+    ) {
+      return false;
+    }
+
+    if (
+      state.filters.provider &&
+      record.providerName !==
+        state.filters.provider
+    ) {
+      return false;
+    }
+
+    if (
+      state.filters.country &&
+      !window.VacatoryJurisdictions.matchesOpportunity(
+        record, state.filters.country
+      )
+    ) {
+      return false;
+    }
+
+    return true;
+  }
+
+  function renderResults(deadlines) {
+    if (!elements.list || !elements.count) {
+      return;
+    }
+
+    elements.count.textContent =
+      resultCountText(deadlines.length);
+
+    elements.loading?.classList.add("hidden");
+    elements.error?.classList.add("hidden");
+
+    if (!deadlines.length) {
+      elements.list.replaceChildren();
+      elements.empty?.classList.remove("hidden");
+      return;
+    }
+
+    elements.empty?.classList.add("hidden");
+
+    elements.list.innerHTML =
+      renderExactDeadlineSections(deadlines);
+  }
+
+  function resultCountText(count) {
+    return `${count} ${pluralise(count, "deadline", "deadlines")}`;
+  }
+
+  /* ======================================================================
+     EXACT DEADLINES
+     ====================================================================== */
+
+  function renderExactDeadlineSections(records) {
+    if (!records.length) {
+      return "";
+    }
+
+    return `
+      <div
+        class="deadline-list-canonical"
+        role="region"
+        aria-label="Exact application deadlines in date order"
+      >
+        ${records.map(renderDeadlineCard).join("")}
+      </div>
+    `;
+  }
+
+  function renderDeadlineCard(record) {
+    const data = getData();
+    const dateParts =
+      data.formatShortDeadlineDate(
+        record.closesOn
+      );
+
+    const providerUrl =
+      data.providerProfileUrl(record);
+
+    const detailId =
+      `deadline-${safeId(record.deadlineRecordKey || record.deadlineKey)}`;
+
+    const programmeCount =
+      record.programmeOccurrences.length;
+
+    return `
+      <article class="deadline-card deadline-card-canonical">
+        <div class="deadline-card-date" aria-label="${escapeHtml(data.formatDate(record.closesOn))}">
+          <span class="deadline-date-day">${escapeHtml(dateParts.day)}</span>
+          <span class="deadline-date-month">${escapeHtml(dateParts.month)}</span>
+          <span class="deadline-date-year">${escapeHtml(dateParts.year)}</span>
+        </div>
+
+        <div class="deadline-card-main">
+          <div class="deadline-card-topline">
+            <span class="deadline-provider-type">
+              ${escapeHtml(data.providerTypeLabel(record.providerType))}
+            </span>
+          </div>
+
+          <p class="deadline-provider-name">
+            ${
+              providerUrl
+                ? `<a href="${escapeHtml(providerUrl)}">${escapeHtml(record.providerName)}</a>`
+                : escapeHtml(record.providerName)
+            }
+          </p>
+
+          <h5 class="deadline-opportunity-title">
+            ${escapeHtml(record.publicTitle)}
+          </h5>
+
+          <div class="deadline-meta-row">
+            ${metaChip(record.opportunityTypeLabel)}
+            ${locationMetaChip(record, data)}
+            ${
+              programmeCount > 1
+                ? metaChip(
+                    `${programmeCount} programme options`
+                  )
+                : ""
+            }
+            ${
+              record.mayCloseEarly
+                ? metaChip("May close early")
+                : ""
+            }
+          </div>
+
+          <p class="deadline-closing-copy">
+            <strong>Applications close:</strong>
+            ${escapeHtml(data.formatDate(record.closesOn))}
+            ${renderDeadlineTime(record)}
+          </p>
+
+          <details
+            id="${escapeHtml(detailId)}"
+            class="deadline-details"
+            data-deadline-record-key="${escapeHtml(record.deadlineRecordKey)}"
+          >
+            <summary>View details</summary>
+            <div
+              class="deadline-detail-body"
+              data-deadline-detail-body
+              aria-live="polite"
+            >
+              <p class="deadline-detail-prompt">
+                Detailed application information loads when you open this section.
+              </p>
+            </div>
+          </details>
+        </div>
+      </article>
+    `;
+  }
+
+  function renderDeadlineTime(record) {
+    if (!record.closesAt) {
+      return "";
+    }
+
+    const timezone =
+      record.closesTimezone
+        ? ` ${record.closesTimezone}`
+        : "";
+
+    return ` at ${escapeHtml(record.closesAt)}${escapeHtml(timezone)}`;
+  }
+
+  function renderExactDeadlineDetails(record, officialUrl) {
+    const data = getData();
+    const cycles = record.cycles || [];
+
+    const first = cycles[0] || {};
+
+    const applicationDates =
+      uniqueNonEmpty(
+        cycles.map(cycle =>
+          cycle.applicationDatesText
+        )
+      );
+
+    const audience =
+      uniqueNonEmpty(
+        cycles.map(cycle =>
+          cycle.audienceText
+        )
+      );
+
+    const studyStage =
+      uniqueNonEmpty(
+        cycles.map(cycle =>
+          cycle.studyStageText
+        )
+      );
+
+    const academic =
+      uniqueNonEmpty(
+        cycles.map(cycle =>
+          cycle.academicCriteria
+        )
+      );
+
+    const eligibility =
+      uniqueNonEmpty(
+        cycles.map(cycle =>
+          cycle.eligibilityText
+        )
+      );
+
+    const process =
+      uniqueNonEmpty(
+        cycles.map(cycle =>
+          cycle.applicationProcessText
+        )
+      );
+
+    const assessments =
+      uniqueNonEmpty(
+        cycles.map(cycle =>
+          cycle.assessmentsText
+        )
+      );
+
+    const progression =
+      uniqueNonEmpty(
+        cycles.map(cycle =>
+          cycle.progressionRouteText
+        )
+      );
+
+    const funding =
+      uniqueNonEmpty(
+        cycles.map(cycle =>
+          cycle.fundingText
+        )
+      );
+
+    const expenses =
+      uniqueNonEmpty(
+        cycles.map(cycle =>
+          cycle.expensesText
+        )
+      );
+
+    const travel =
+      uniqueNonEmpty(
+        cycles.map(cycle =>
+          cycle.travelSupportText
+        )
+      );
+
+    const accommodation =
+      uniqueNonEmpty(
+        cycles.map(cycle =>
+          cycle.accommodationSupportText
+        )
+      );
+
+    const rightToWork =
+      uniqueNonEmpty(
+        cycles.map(cycle =>
+          cycle.rightToWorkText
+        )
+      );
+
+    const disability =
+      uniqueNonEmpty(
+        cycles.map(cycle =>
+          cycle.disabilitySupportText
+        )
+      );
+
+    return `
+      <div class="deadline-details-grid">
+        <section class="deadline-detail-section">
+          <h6>Application</h6>
+          <dl class="deadline-detail-list">
+            ${detailItem(
+              "Opens",
+              first.opensOn
+                ? data.formatDate(first.opensOn)
+                : ""
+            )}
+            ${detailItem(
+              "Closes",
+              data.formatDate(record.closesOn)
+            )}
+            ${detailItem(
+              "Application timing",
+              applicationDates.join(" | ")
+            )}
+            ${detailItem(
+              "Status",
+              data.formatApplicationStatus(
+                record.publicApplicationStatus
+              )
+            )}
+          </dl>
+        </section>
+
+        ${renderProgrammeOccurrences(record)}
+
+        ${
+          audience.length ||
+          studyStage.length ||
+          academic.length ||
+          eligibility.length
+            ? `
+              <section class="deadline-detail-section">
+                <h6>Eligibility</h6>
+                <dl class="deadline-detail-list">
+                  ${detailItem("Audience", audience.join(" | "))}
+                  ${detailItem("Study stage", studyStage.join(" | "))}
+                  ${detailItem("Academic criteria", academic.join(" | "))}
+                  ${detailItem("Eligibility", eligibility.join(" | "))}
+                </dl>
+              </section>
+            `
+            : ""
+        }
+
+        ${
+          process.length ||
+          assessments.length ||
+          progression.length
+            ? `
+              <section class="deadline-detail-section">
+                <h6>Application process</h6>
+                <dl class="deadline-detail-list">
+                  ${detailItem("Process", process.join(" | "))}
+                  ${detailItem("Assessments", assessments.join(" | "))}
+                  ${detailItem("Progression", progression.join(" | "))}
+                </dl>
+              </section>
+            `
+            : ""
+        }
+
+        ${renderCompensation(record)}
+
+        ${
+          funding.length ||
+          expenses.length ||
+          travel.length ||
+          accommodation.length ||
+          rightToWork.length ||
+          disability.length
+            ? `
+              <section class="deadline-detail-section">
+                <h6>Funding and support</h6>
+                <dl class="deadline-detail-list">
+                  ${detailItem("Funding", funding.join(" | "))}
+                  ${detailItem("Expenses", expenses.join(" | "))}
+                  ${detailItem("Travel", travel.join(" | "))}
+                  ${detailItem("Accommodation", accommodation.join(" | "))}
+                  ${detailItem("Right to work / visa", rightToWork.join(" | "))}
+                  ${detailItem("Disability support", disability.join(" | "))}
+                </dl>
+              </section>
+            `
+            : ""
+        }
+      </div>
+
+      ${renderActionLinks(record, officialUrl)}
+    `;
+  }
+
+  function renderProgrammeOccurrences(record) {
+    const data = getData();
+    const occurrences =
+      record.programmeOccurrences || [];
+
+    if (!occurrences.length) {
+      return "";
+    }
+
+    return `
+      <section class="deadline-detail-section">
+        <h6>
+          ${
+            occurrences.length > 1
+              ? "Programme options"
+              : "Programme"
+          }
+        </h6>
+
+        <ul class="deadline-programme-list">
+          ${occurrences
+            .map(occurrence => {
+              const date =
+                data.formatDateRange(
+                  occurrence.programmeStartsOn,
+                  occurrence.programmeEndsOn,
+                  occurrence.programmeDatesText
+                ) || "Programme dates not published";
+
+              const extras = [
+                occurrence.durationText,
+                occurrence.placesText
+              ].filter(Boolean);
+
+              return `
+                <li>
+                  <strong>${escapeHtml(date)}</strong>
+                  ${
+                    extras.length
+                      ? `<span>${escapeHtml(extras.join(" - "))}</span>`
+                      : ""
+                  }
+                </li>
+              `;
+            })
+            .join("")}
+        </ul>
+      </section>
+    `;
+  }
+
+  function renderCompensation(record) {
+    const data = getData();
+
+    const items =
+      record.compensation || [];
+
+    if (!items.length) {
+      return "";
+    }
+
+    const rows = items
+      .map(item => {
+        const value =
+          data.formatCompensation(item);
+
+        if (!value) {
+          return "";
+        }
+
+        const label =
+          [
+            item.type
+              ? data.readableLabel(item.type)
+              : "Compensation",
+            item.stage
+              ? data.readableLabel(item.stage)
+              : ""
+          ]
+            .filter(Boolean)
+            .join(" - ");
+
+        return detailItem(label, value);
+      })
+      .filter(Boolean)
+      .join("");
+
+    if (!rows) {
+      return "";
+    }
+
+    return `
+      <section class="deadline-detail-section">
+        <h6>Pay and funding</h6>
+        <dl class="deadline-detail-list">
+          ${rows}
+        </dl>
+      </section>
+    `;
+  }
+
+  function renderActionLinks(record, officialUrl) {
+    const data = getData();
+
+    const providerUrl =
+      data.providerProfileUrl(record);
+
+    const links = [];
+
+    if (providerUrl && ["law_firm", "barristers_chambers"].includes(record.providerType)) {
+      links.push(`
+        <a class="deadline-action-link" href="${escapeHtml(providerUrl)}">
+          View ${escapeHtml(record.providerName)} profile
+        </a>
+      `);
+    }
+
+    if (officialUrl) {
+      links.push(`
+        <a
+          class="deadline-action-link deadline-action-link-primary"
+          href="${escapeHtml(officialUrl)}"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Open official page for ${escapeHtml(record.publicTitle)} in a new tab"
+        >
+          Official opportunity page
+          <span aria-hidden="true">↗</span>
+        </a>
+      `);
+    }
+
+    if (!links.length) {
+      return "";
+    }
+
+    return `
+      <div class="deadline-actions">
+        ${links.join("")}
+      </div>
+    `;
+  }
+
+  /* ======================================================================
+     SMALL RENDER HELPERS
+     ====================================================================== */
+
+  function metaChip(value) {
+    if (!value) {
+      return "";
+    }
+
+    return `
+      <span class="deadline-meta-chip">
+        ${escapeHtml(value)}
+      </span>
+    `;
+  }
+
+  function locationMetaChip(record, data) {
+    const countries = recordCountries(record);
+    const place = recordCityOrScope(record);
+
+    if (place === "Virtual") {
+      return `
+        <span
+          class="deadline-meta-chip deadline-country-chip"
+          role="img"
+          aria-label="Virtual"
+          title="Virtual"
+        >
+          <span class="country-flag" aria-hidden="true">💻</span>
+          <span class="deadline-country-place" aria-hidden="true">Virtual</span>
+        </span>
+      `;
+    }
+
+    if (!countries.length) {
+      return metaChip(
+        place || data.locationLabel(record)
+      );
+    }
+
+    const flagItems = data.countryFlagItems(record);
+    const accessibleLabel = [
+      flagItems.map(item => item.country).join(", "),
+      place
+    ].filter(Boolean).join(" — ");
+
+    const flags = flagItems
+      .map(item => `
+        <span class="country-flag" aria-hidden="true">
+          ${item.image ? '<img src="/assets/flags/ulster.svg" alt="" width="20" height="12">' : escapeHtml(item.flag)}
+        </span>
+      `)
+      .join("");
+
+    return `
+      <span
+        class="deadline-meta-chip deadline-country-chip"
+        role="img"
+        aria-label="${escapeHtml(accessibleLabel)}"
+        title="${escapeHtml(accessibleLabel)}"
+      >
+        <span class="country-flag-group" aria-hidden="true">
+          ${flags}
+        </span>
+        ${
+          place
+            ? `<span class="deadline-country-place" aria-hidden="true">${escapeHtml(place)}</span>`
+            : ""
+        }
+      </span>
+    `;
+  }
+
+  function detailItem(label, value) {
+    if (!value) {
+      return "";
+    }
+
+    return `
+      <div class="deadline-detail-row">
+        <dt>${escapeHtml(label)}</dt>
+        <dd>${escapeHtml(value)}</dd>
+      </div>
+    `;
+  }
+
+  function uniqueNonEmpty(values) {
+    return [
+      ...new Set(
+        (values || [])
+          .map(value =>
+            String(value || "").trim()
+          )
+          .filter(Boolean)
+      )
+    ];
+  }
+
+  function uniqueSorted(values) {
+    return [...new Set(values.filter(Boolean))]
+      .sort((a, b) =>
+        String(a).localeCompare(String(b))
+      );
+  }
+
+  function safeId(value) {
+    return String(value || "")
+      .replace(/[^a-zA-Z0-9_-]/g, "-");
+  }
+
+  function pluralise(number, singular, plural) {
+    return number === 1 ? singular : plural;
+  }
+
+  function setText(element, value) {
+    if (element) {
+      element.textContent = String(value);
+    }
+  }
+
+  function getData() {
+    return window.VacatoryOpportunityData;
+  }
+
+  function escapeHtml(value) {
+    const data = getData();
+
+    if (data?.escapeHtml) {
+      return data.escapeHtml(value);
+    }
+
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  function debounce(fn, delay = 120) {
+    let timer;
+
+    return (...args) => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(
+        () => fn(...args),
+        delay
+      );
+    };
+  }
+
+  /* ======================================================================
+     STATES
+     ====================================================================== */
+
+  function setLoadingState() {
+    elements.loading?.classList.remove("hidden");
+    elements.error?.classList.add("hidden");
+    elements.empty?.classList.add("hidden");
+
+    if (elements.list) {
+      elements.list.replaceChildren();
+    }
+
+    if (elements.count) {
+      elements.count.textContent =
+        "Loading application deadlines...";
+    }
+  }
+
+  function showErrorState() {
+    elements.loading?.classList.add("hidden");
+    elements.empty?.classList.add("hidden");
+    elements.error?.classList.remove("hidden");
+
+    if (elements.list) {
+      elements.list.replaceChildren();
+    }
+
+    if (elements.count) {
+      elements.count.textContent =
+        "Application deadlines could not be loaded.";
+    }
+  }
+})();
