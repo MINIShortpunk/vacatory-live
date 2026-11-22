@@ -227,14 +227,15 @@
       supabaseClient,
       descriptor
     )
-      .then(rows =>
-        rows.flatMap(row =>
+      .then(async rows => {
+        const cityCycles = await fetchCityCycleRows(supabaseClient, rows);
+        return rows.flatMap(row =>
           expandOpportunityCityPosts(
             normaliseOpportunity(row, { includeSearchIndex }),
-            { includeSearchIndex }
+            { includeSearchIndex, cityCycles }
           )
-        )
-      )
+        );
+      })
       .catch(error => {
         opportunityLoadPromises.delete(cacheKey);
         throw error;
@@ -1002,6 +1003,21 @@
      CANONICAL PUBLIC OBJECT
      ======================================================================== */
 
+  async function fetchCityCycleRows(client, rows) {
+    const ids = rows
+      .filter(row => Number(row.cycle_count) > 1 &&
+        Array.isArray(row.cities) && row.cities.length > 1)
+      .map(row => row.opportunity_id);
+    if (!ids.length) return [];
+    const result = await client
+      .from(OCCURRENCES_VIEW)
+      .select("opportunity_id,cycle_id,post_city")
+      .in("opportunity_id", ids)
+      .not("post_city", "is", null);
+    if (result.error) throw result.error;
+    return result.data || [];
+  }
+
   function expandOpportunityCityPosts(opportunity, options = {}) {
     if (!opportunity) return [];
     const confirmed = new Map();
@@ -1013,6 +1029,13 @@
       }
     }
     if (confirmed.size < 2) return [opportunity];
+    const cityCycles = options.cityCycles || [];
+    if (opportunity.cycles.length > 1 &&
+        [...confirmed.values()].some(location =>
+          !cityCycles.some(route => route.opportunity_id === opportunity.sourceOpportunityId &&
+            route.post_city === location.city))) {
+      return [opportunity];
+    }
     return [...confirmed.values()].map(location => {
       const city = location.city;
       const country = location.country;
@@ -1031,6 +1054,25 @@
         cities: [city],
         locations: [location]
       };
+      if (opportunity.cycles.length > 1) {
+        const cycleIds = new Set(cityCycles
+          .filter(route => route.opportunity_id === opportunity.sourceOpportunityId &&
+            route.post_city === city)
+          .map(route => route.cycle_id));
+        const matchingCycles = opportunity.cycles
+          .filter(cycle => cycleIds.has(cycle.cycleId));
+        if (matchingCycles.length) {
+          const primary = matchingCycles[0];
+          post.cycles = matchingCycles;
+          post.cycleCount = matchingCycles.length;
+          post.primaryCycleId = primary.cycleId;
+          for (const [key, value] of Object.entries(primary)) {
+            if (key in post && !["raw", "cycleId", "isDisplayCycle"].includes(key)) {
+              post[key] = value;
+            }
+          }
+        }
+      }
       post.searchText = options.includeSearchIndex
         ? buildSearchText(post)
         : "";
