@@ -473,6 +473,14 @@
     return rows;
   }
 
+  function cityLocationLabel(row) {
+    const city = stringValue(row.post_city);
+    if (!city) return stringValue(row.location_summary);
+    const country = stringValue(row.post_country);
+    const nations = window.VacatoryJurisdictions?.fromPlace?.(country, [city]) || [];
+    return [city, nations.length === 1 ? nations[0] : country].filter(Boolean).join(", ");
+  }
+
   function normaliseOccurrence(row) {
     if (
       !row ||
@@ -526,15 +534,11 @@
       routeCity: stringValue(row.post_city),
       routeScope: "",
       routeScopeKey: "",
-      publicLocationLabel: row.post_city
-        ? `${stringValue(row.post_city)}, ${stringValue(row.post_country)}`
-        : stringValue(row.location_summary),
+      publicLocationLabel: cityLocationLabel(row),
 
       countries: row.post_country ? [stringValue(row.post_country)] : cleanStringArray(row.countries),
       cities: row.post_city ? [stringValue(row.post_city)] : cleanStringArray(row.cities),
-      locationSummary: row.post_city
-        ? `${stringValue(row.post_city)}, ${stringValue(row.post_country)}`
-        : stringValue(row.location_summary),
+      locationSummary: cityLocationLabel(row),
 
       cycleId,
       opensOn: dateOnlyValue(row.opens_on),
