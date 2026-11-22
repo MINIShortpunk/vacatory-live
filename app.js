@@ -1787,7 +1787,7 @@ function renderHomepageDeadlineLocation(row) {
     >
       ${flags.map(item => `
         <span class="deadline-home-flag" aria-hidden="true">
-          ${item.image ? '<img src="/assets/flags/ulster.svg" alt="" width="20" height="12">' : escapeHtml(item.flag)}
+          ${item.image ? '<img src="${escapeHtml(item.image)}" alt="" width="20" height="12">' : escapeHtml(item.flag)}
         </span>
       `).join("")}
     </span>
