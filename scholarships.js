@@ -348,7 +348,16 @@
     for (const item of flags) {
       const flag = document.createElement("span");
       flag.className = "country-flag";
-      flag.textContent = item.flag;
+      if (item.image) {
+        const image = document.createElement("img");
+        image.src = item.image;
+        image.alt = "";
+        image.width = 20;
+        image.height = 12;
+        flag.appendChild(image);
+      } else {
+        flag.textContent = item.flag;
+      }
       group.appendChild(flag);
     }
     value.appendChild(group);
