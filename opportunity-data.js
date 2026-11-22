@@ -2330,7 +2330,7 @@
       England: tagFlag("gbeng"),
       Scotland: tagFlag("gbsct"),
       Wales: tagFlag("gbwls"),
-      "Northern Ireland": "🇬🇧 NI",
+      "Northern Ireland": "NI",
       "Republic of Ireland": "🇮🇪"
     }[jurisdiction] || countryFlag(jurisdiction);
   }
@@ -2367,7 +2367,10 @@
           items.set(label, {
             country: label,
             code: countryCode(country),
-            flag: jurisdictionFlag(label)
+            flag: jurisdictionFlag(label),
+            image: label === "Northern Ireland"
+              ? "/assets/flags/ulster.svg"
+              : ""
           });
         }
       }
