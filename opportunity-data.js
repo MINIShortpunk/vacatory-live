@@ -503,6 +503,12 @@
     return [city, nation || country].filter(Boolean).join(", ");
   }
 
+  function stripLocationPrefix(title) {
+    const value = stringValue(title);
+    const prefix = /^(?:(?:United Kingdom|Republic of Ireland|Ireland|England|Scotland|Wales|Northern Ireland)(?:\s*\/\s*(?:United Kingdom|Republic of Ireland|Ireland|England|Scotland|Wales|Northern Ireland))*)\s+-\s+/i;
+    return value.replace(prefix, "").trim() || value;
+  }
+
   function normaliseOccurrence(row) {
     if (
       !row ||
@@ -528,8 +534,8 @@
       opportunitySlug: stringValue(row.opportunity_slug),
       officialName: stringValue(row.official_name),
       publicTitle: row.post_city
-        ? `${stringValue(row.public_title) || stringValue(row.official_name) || "Opportunity"} — ${stringValue(row.post_city)}`
-        : stringValue(row.public_title) || stringValue(row.official_name) || "Opportunity",
+        ? `${stripLocationPrefix(row.public_title || row.official_name || "Opportunity")} — ${stringValue(row.post_city)}`
+        : stripLocationPrefix(row.public_title || row.official_name || "Opportunity"),
       deliveryMode: stringValue(row.delivery_mode),
 
       providerId: String(row.provider_id),
@@ -1146,10 +1152,9 @@
       englishName: stringValue(row.english_name),
       languageCode: stringValue(row.language_code),
 
-      publicTitle:
-        stringValue(row.public_title) ||
-        stringValue(row.official_name) ||
-        "Opportunity",
+      publicTitle: stripLocationPrefix(
+        row.public_title || row.official_name || "Opportunity"
+      ),
 
       publicSummary: stringValue(row.public_summary),
       deliveryMode: stringValue(row.delivery_mode),
