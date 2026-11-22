@@ -658,6 +658,7 @@
           opportunitySlug: occurrence.opportunitySlug,
           publicTitle: occurrence.publicTitle,
           officialName: occurrence.officialName,
+          deliveryMode: occurrence.deliveryMode,
 
           providerId: occurrence.providerId,
           providerType: occurrence.providerType,
