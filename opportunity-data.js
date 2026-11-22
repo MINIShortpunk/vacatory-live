@@ -473,12 +473,25 @@
     return rows;
   }
 
+  function jurisdictionForPlace(country, place) {
+    const rules = window.VacatoryJurisdictions;
+    if (!rules?.options || !rules?.matchesOpportunity || !place) return "";
+    const matches = rules.options.filter(selection =>
+      rules.matchesOpportunity({
+        routeCountry: country,
+        routeCity: place,
+        cities: []
+      }, selection)
+    );
+    return matches.length === 1 ? matches[0] : "";
+  }
+
   function cityLocationLabel(row) {
     const city = stringValue(row.post_city);
     if (!city) return stringValue(row.location_summary);
     const country = stringValue(row.post_country);
-    const nations = window.VacatoryJurisdictions?.fromPlace?.(country, [city]) || [];
-    return [city, nations.length === 1 ? nations[0] : country].filter(Boolean).join(", ");
+    const nation = jurisdictionForPlace(country, city);
+    return [city, nation || country].filter(Boolean).join(", ");
   }
 
   function normaliseOccurrence(row) {
@@ -2341,10 +2354,13 @@
       if (!places.length && record.routeScope) {
         places.push(record.routeScope);
       }
-      const nations = places.length
-        ? window.VacatoryJurisdictions?.fromPlace?.(country, places) || []
-        : [];
-      const labels = nations.length ? nations : [country];
+      const nations = places.map(place =>
+        jurisdictionForPlace(country, place)
+      );
+      const labels = places.length &&
+        nations.every(Boolean)
+        ? [...new Set(nations)]
+        : [country];
       for (const label of labels) {
         if (!items.has(label)) {
           items.set(label, {
