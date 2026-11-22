@@ -445,39 +445,19 @@
   }
 
   function scholarshipLocation(opportunity) {
-    if (opportunity.routeCity && opportunity.publicLocationLabel) {
-      return opportunity.publicLocationLabel;
-    }
-    const directCities = uniqueSorted([
+    const cities = uniqueSorted([
       opportunity.routeCity,
       ...(opportunity.cities || [])
     ]);
-
-    if (directCities.length) {
-      const countries = scholarshipCountries(opportunity);
-      return [...directCities, ...countries].join(", ");
+    const jurisdictions = window.VacatoryOpportunityData
+      .countryFlagItems(opportunity)
+      .map(item => item.country);
+    if (cities.length) {
+      return [...cities, ...jurisdictions].join(", ");
     }
-
-    const provider = providerLocation(opportunity);
-
-    if (provider?.city) {
-      if (opportunity.deliveryMode === "online") {
-        return `Online · Provider: ${provider.city}`;
-      }
-
-      const country =
-        opportunity.routeCountry ||
-        (opportunity.countries || [])[0] ||
-        provider.country;
-
-      return [provider.city, country]
-        .filter(Boolean)
-        .join(", ");
-    }
-
     return opportunity.publicLocationLabel ||
       opportunity.locationSummary ||
-      scholarshipCountries(opportunity).join(", ") ||
+      jurisdictions.join(", ") ||
       (opportunity.deliveryMode === "online" ? "Online" : "See official page");
   }
 
