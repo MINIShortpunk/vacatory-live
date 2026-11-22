@@ -2338,9 +2338,12 @@
       const places = record.routeCity
         ? [record.routeCity]
         : cleanStringArray(record.cities);
-      const nations = window.VacatoryJurisdictions?.fromPlace?.(
-        country, places
-      ) || [];
+      if (!places.length && record.routeScope) {
+        places.push(record.routeScope);
+      }
+      const nations = places.length
+        ? window.VacatoryJurisdictions?.fromPlace?.(country, places) || []
+        : [];
       const labels = nations.length ? nations : [country];
       for (const label of labels) {
         if (!items.has(label)) {
