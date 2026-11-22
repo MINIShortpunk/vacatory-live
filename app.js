@@ -1770,7 +1770,7 @@ function renderHomepageDeadlineLocation(row) {
   )];
 
   if (!countries.length) {
-    return "";
+    return `<span class="deadline-home-location" role="img" aria-label="Location not published"><span class="deadline-home-flag" aria-hidden="true">🌐</span><span class="deadline-home-location-copy" aria-hidden="true">Location not published</span></span>`;
   }
 
   const data = window.VacatoryOpportunityData;
@@ -1787,9 +1787,10 @@ function renderHomepageDeadlineLocation(row) {
     >
       ${flags.map(item => `
         <span class="deadline-home-flag" aria-hidden="true">
-          ${item.image ? '<img src="${escapeHtml(item.image)}" alt="" width="20" height="12">' : escapeHtml(item.flag)}
+          ${item.image ? `<img src="${escapeHtml(item.image)}" alt="" width="20" height="12">` : escapeHtml(item.flag)}
         </span>
       `).join("")}
+      ${countries.length === 1 && countries[0] === "United Kingdom" && !(row.cities || []).length ? '<span class="deadline-home-location-copy" aria-hidden="true">Nationwide</span>' : ""}
     </span>
   `;
 }
