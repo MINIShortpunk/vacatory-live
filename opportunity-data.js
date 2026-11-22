@@ -2306,12 +2306,53 @@
     );
   }
 
-  function countryFlagItems(countries) {
-    return cleanStringArray(countries).map(country => ({
-      country,
-      code: countryCode(country),
-      flag: countryFlag(country)
-    }));
+  function jurisdictionFlag(jurisdiction) {
+    const tagFlag = tags => String.fromCodePoint(
+      0x1f3f4,
+      ...[...tags].map(letter => 0xe0000 + letter.charCodeAt(0)),
+      0xe007f
+    );
+    return {
+      England: tagFlag("gbeng"),
+      Scotland: tagFlag("gbsct"),
+      Wales: tagFlag("gbwls"),
+      "Northern Ireland": "🇬🇧 NI",
+      "Republic of Ireland": "🇮🇪"
+    }[jurisdiction] || countryFlag(jurisdiction);
+  }
+
+  function countryFlagItems(countriesOrRecord) {
+    const record = Array.isArray(countriesOrRecord) ? null : countriesOrRecord;
+    const countries = cleanStringArray(record
+      ? record.countries
+      : countriesOrRecord);
+    if (!record) {
+      return countries.map(country => ({
+        country,
+        code: countryCode(country),
+        flag: countryFlag(country)
+      }));
+    }
+    const items = new Map();
+    for (const country of countries) {
+      const places = record.routeCity
+        ? [record.routeCity]
+        : cleanStringArray(record.cities);
+      const nations = window.VacatoryJurisdictions?.fromPlace?.(
+        country, places
+      ) || [];
+      const labels = nations.length ? nations : [country];
+      for (const label of labels) {
+        if (!items.has(label)) {
+          items.set(label, {
+            country: label,
+            code: countryCode(country),
+            flag: jurisdictionFlag(label)
+          });
+        }
+      }
+    }
+    return [...items.values()];
   }
 
   function buildCountryCodeLookup() {
