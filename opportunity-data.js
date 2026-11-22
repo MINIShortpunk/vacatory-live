@@ -2370,7 +2370,9 @@
             flag: jurisdictionFlag(label),
             image: label === "Northern Ireland"
               ? "/assets/flags/ulster.svg"
-              : ""
+              : label === "Wales"
+                ? "/assets/flags/wales.svg"
+                : ""
           });
         }
       }
