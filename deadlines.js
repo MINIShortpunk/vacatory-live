@@ -1000,7 +1000,7 @@
 
   function locationMetaChip(record, data) {
     const countries = recordCountries(record);
-    const place = recordCityOrScope(record);
+    const place = recordCityOrScope(record) || (record.countries?.length === 1 && record.countries[0] === "United Kingdom" ? "Nationwide" : "");
 
     if (place === "Virtual") {
       return `
@@ -1017,9 +1017,7 @@
     }
 
     if (!countries.length) {
-      return metaChip(
-        place || data.locationLabel(record)
-      );
+      return `<span class="deadline-meta-chip deadline-country-chip" role="img" aria-label="Location not published"><span class="country-flag" aria-hidden="true">🌐</span><span class="deadline-country-place" aria-hidden="true">${escapeHtml(place || data.locationLabel(record))}</span></span>`;
     }
 
     const flagItems = data.countryFlagItems(record);
@@ -1031,7 +1029,7 @@
     const flags = flagItems
       .map(item => `
         <span class="country-flag" aria-hidden="true">
-          ${item.image ? '<img src="${escapeHtml(item.image)}" alt="" width="20" height="12">' : escapeHtml(item.flag)}
+          ${item.image ? `<img src="${escapeHtml(item.image)}" alt="" width="20" height="12">` : escapeHtml(item.flag)}
         </span>
       `)
       .join("");
