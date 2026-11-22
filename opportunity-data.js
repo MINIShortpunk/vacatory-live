@@ -492,7 +492,9 @@
       const countries = cleanStringArray(row.countries);
       if (!countries.length) return stringValue(row.location_summary) || "Location not published";
       if (countries.length === 1 && countries[0] === "United Kingdom") {
-        return "Nationwide, United Kingdom";
+        return /\b(nationwide|uk-wide|united kingdom-wide)\b/i.test(String(row.location_summary || ""))
+          ? "Nationwide, United Kingdom"
+          : "United Kingdom location not specified";
       }
       return stringValue(row.location_summary) || countries.join("; ");
     }
@@ -1912,13 +1914,14 @@
     }
 
     if (record?.routeCountry) {
-      return record.routeCountry === "United Kingdom"
+      return record.routeCountry === "United Kingdom" &&
+        /\b(nationwide|uk-wide|united kingdom-wide)\b/i.test(String(record.routeScope || record.locationSummary || ""))
         ? "Nationwide, United Kingdom"
         : record.routeCountry;
     }
 
     if (record?.locationSummary) {
-      if (record.locationSummary === "United Kingdom" &&
+      if (/\b(nationwide|uk-wide|united kingdom-wide)\b/i.test(record.locationSummary) &&
           !cleanStringArray(record?.cities).length) {
         return "Nationwide, United Kingdom";
       }
@@ -1937,9 +1940,7 @@
     }
 
     if (countries.length) {
-      return countries.length === 1 && countries[0] === "United Kingdom"
-        ? "Nationwide, United Kingdom"
-        : countries.join(", ");
+      return countries.join(", ");
     }
 
     return "Location not published";
@@ -2379,13 +2380,16 @@
       const labels = places.length &&
         nations.every(Boolean)
         ? [...new Set(nations)]
-        : [country];
+        : country === "United Kingdom" && !places.length &&
+          !/\b(nationwide|uk-wide|united kingdom-wide)\b/i.test(String(record.publicLocationLabel || record.locationSummary || ""))
+          ? ["Location not specified"]
+          : [country];
       for (const label of labels) {
         if (!items.has(label)) {
           items.set(label, {
             country: label,
             code: countryCode(country),
-            flag: jurisdictionFlag(label),
+            flag: label === "Location not specified" ? "🌐" : jurisdictionFlag(label),
             image: label === "Northern Ireland"
               ? "/assets/flags/ulster.svg"
               : label === "Wales"
