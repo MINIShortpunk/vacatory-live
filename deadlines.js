@@ -1021,9 +1021,14 @@
     }
 
     const flagItems = data.countryFlagItems(record);
+    const displayPlace = place || (
+      flagItems.some(item => item.country === "Location not specified")
+        ? "Location not published"
+        : ""
+    );
     const accessibleLabel = [
       flagItems.map(item => item.country).join(", "),
-      place
+      displayPlace
     ].filter(Boolean).join(" — ");
 
     const flags = flagItems
@@ -1045,8 +1050,8 @@
           ${flags}
         </span>
         ${
-          place
-            ? `<span class="deadline-country-place" aria-hidden="true">${escapeHtml(place)}</span>`
+          displayPlace
+            ? `<span class="deadline-country-place" aria-hidden="true">${escapeHtml(displayPlace)}</span>`
             : ""
         }
       </span>
