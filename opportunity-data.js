@@ -442,6 +442,7 @@
       } else {
         query = query
           .eq("is_event", false)
+          .neq("opportunity_type_slug", "scholarship_bursary")
           .eq("has_exact_application_deadline", true);
 
         if (!descriptor.includePassed) {
