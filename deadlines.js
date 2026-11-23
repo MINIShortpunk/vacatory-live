@@ -16,7 +16,7 @@
   "use strict";
 
   const SHARED_MODULE_SRC =
-    "opportunity-data.js?v=canonical-country-flags-20261016";
+    "opportunity-data.js?v=scotland-flags-20261123";
 
   const state = {
     deadlines: [],
