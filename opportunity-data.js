@@ -2399,7 +2399,9 @@
               ? "/assets/flags/ulster.svg"
               : label === "Wales"
                 ? "/assets/flags/wales.svg"
-                : ""
+                : label === "Scotland"
+                  ? "/assets/flags/scotland.svg"
+                  : ""
           });
         }
       }
